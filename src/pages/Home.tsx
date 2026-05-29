@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MapPin, AlertTriangle, ChevronRight, Activity, Navigation, Route, History } from 'lucide-react';
+import {
+  MapPin, AlertTriangle, ChevronRight, Activity,
+  Navigation, Route, History, Phone, Zap, ArrowRight,
+  Shield, Flame, Truck, Wrench, Wind
+} from 'lucide-react';
 import { useUserStore } from '../store/userStore';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { subscribeToAnomalies } from '../services/anomalyService';
@@ -25,12 +29,21 @@ const TRAFFIC_TIPS = [
 ];
 
 const QUICK_ACTIONS = [
-  { icon: '🏥', label: 'Hospitals', path: '/nearme?cat=hospital', color: '#ef4444' },
-  { icon: '🚔', label: 'Police', path: '/nearme?cat=police', color: '#3b82f6' },
-  { icon: '🚛', label: 'Towing', path: '/nearme?cat=towing', color: '#f97316' },
-  { icon: '⛽', label: 'Petrol', path: '/nearme?cat=petrol', color: '#eab308' },
-  { icon: '🔧', label: 'Puncture', path: '/nearme?cat=puncture', color: '#22c55e' },
-  { icon: '🚻', label: 'Washroom', path: '/nearme?cat=washroom', color: '#06b6d4' },
+  { icon: '🏥', label: 'Hospitals',  path: '/nearme?cat=hospital', color: '#EF4444', bg: '#FEF2F2', border: '#FECACA' },
+  { icon: '🚔', label: 'Police',     path: '/nearme?cat=police',   color: '#3B82F6', bg: '#EFF6FF', border: '#BFDBFE' },
+  { icon: '🚛', label: 'Towing',     path: '/nearme?cat=towing',   color: '#F97316', bg: '#FFF7ED', border: '#FED7AA' },
+  { icon: '⛽', label: 'Petrol',     path: '/nearme?cat=petrol',   color: '#EAB308', bg: '#FEFCE8', border: '#FEF08A' },
+  { icon: '🔧', label: 'Puncture',   path: '/nearme?cat=puncture', color: '#10B981', bg: '#ECFDF5', border: '#A7F3D0' },
+  { icon: '🚻', label: 'Washroom',   path: '/nearme?cat=washroom', color: '#06B6D4', bg: '#ECFEFF', border: '#A5F3FC' },
+];
+
+const EMERGENCY = [
+  { label: 'Police',          number: '100',  color: '#3B82F6' },
+  { label: 'Ambulance',       number: '108',  color: '#EF4444' },
+  { label: 'Fire',            number: '101',  color: '#F97316' },
+  { label: 'Highway',         number: '1033', color: '#4F46E5' },
+  { label: 'Women Safety',    number: '1091', color: '#7C3AED' },
+  { label: 'Disaster',        number: '112',  color: '#10B981' },
 ];
 
 function timeAgo(ts: number) {
@@ -56,11 +69,8 @@ export default function Home() {
     return unsub;
   }, []);
 
-  // Rotate traffic tips every 5 seconds
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTipIndex(i => (i + 1) % TRAFFIC_TIPS.length);
-    }, 5000);
+    const timer = setInterval(() => setTipIndex(i => (i + 1) % TRAFFIC_TIPS.length), 5000);
     return () => clearInterval(timer);
   }, []);
 
@@ -71,49 +81,53 @@ export default function Home() {
   return (
     <div className="page" style={{ overflowY: 'auto' }}>
 
-      {/* Hero Greeting */}
+      {/* ── Hero Greeting ─────────────────────────────── */}
       <div style={{
-        background: 'linear-gradient(135deg, #1a0510 0%, #0a0c12 60%)',
-        borderRadius: 'var(--r-xl)', padding: '24px 24px 20px',
-        marginBottom: 20, border: '1px solid rgba(239,68,68,0.15)',
+        background: 'linear-gradient(135deg, #3730A3 0%, #4F46E5 50%, #7C3AED 100%)',
+        borderRadius: 16, padding: '1.5rem', marginBottom: '1rem',
         position: 'relative', overflow: 'hidden',
       }}>
-        {/* Decorative circle */}
-        <div style={{
-          position: 'absolute', right: -30, top: -30,
-          width: 140, height: 140, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(239,68,68,0.1) 0%, transparent 70%)',
-        }} />
+        {/* Decorative blobs */}
+        <div style={{ position: 'absolute', right: -40, top: -40, width: 160, height: 160, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', right: 20, bottom: -30, width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', pointerEvents: 'none' }} />
+
         <div style={{ position: 'relative' }}>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-3)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>
+          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.65)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.375rem' }}>
             Welcome back
           </div>
-          <h1 style={{ marginBottom: 4, fontSize: '1.7rem' }}>Hello, {firstName} 👋</h1>
-          <p style={{ fontSize: '0.88rem', color: 'var(--text-2)', marginBottom: 16 }}>
+          <h1 style={{ color: '#fff', fontSize: '1.6rem', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: '0.25rem', lineHeight: 1.2 }}>
+            Hello, {firstName} 👋
+          </h1>
+          <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.75)', marginBottom: '1rem' }}>
             Stay safe on the roads. Help is always one tap away.
           </p>
 
-          {/* Location badge */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)',
-              borderRadius: 'var(--r-full)', padding: '4px 12px', fontSize: '0.78rem',
-            }}>
+          {/* Badges row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <button
+              onClick={async () => await geo.refresh()}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.375rem',
+                background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)',
+                borderRadius: 'var(--r-full)', padding: '0.3rem 0.75rem',
+                fontSize: '0.75rem', color: '#fff', fontWeight: 500,
+                border: 'none', cursor: 'pointer'
+              }}
+              title="Refresh Location"
+            >
               <div style={{
                 width: 7, height: 7, borderRadius: '50%',
-                background: geo.lat ? 'var(--green)' : 'var(--text-3)',
-                animation: geo.lat ? 'pulse-dot 2s infinite' : 'none',
+                background: geo.lat ? '#34D399' : 'rgba(255,255,255,0.4)',
+                animation: geo.lat ? 'pulse-gps 2s infinite' : 'none',
               }} />
-              <MapPin size={12} color="var(--blue)" />
-              <span style={{ color: 'var(--blue)' }}>
-                {geo.loading ? 'Detecting location…' : geo.lat ? `${geo.lat.toFixed(3)}°N, ${geo.lng?.toFixed(3)}°E` : 'Location unavailable'}
-              </span>
-            </div>
+              <MapPin size={11} />
+              {geo.loading ? 'Detecting…' : geo.lat ? `${geo.lat.toFixed(3)}°N, ${geo.lng?.toFixed(3)}°E` : 'Click to locate'}
+            </button>
             {user?.bloodGroup && (
               <div style={{
-                background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
-                borderRadius: 'var(--r-full)', padding: '4px 12px', fontSize: '0.78rem', color: 'var(--red)',
+                background: 'rgba(239,68,68,0.25)', backdropFilter: 'blur(8px)',
+                borderRadius: 'var(--r-full)', padding: '0.3rem 0.75rem',
+                fontSize: '0.75rem', color: '#FCA5A5', fontWeight: 600,
               }}>
                 🩸 {user.bloodGroup}
               </div>
@@ -122,208 +136,212 @@ export default function Home() {
         </div>
       </div>
 
-      {/* SOS + Near Me buttons */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
-        <button
-          onClick={() => navigate('/report')}
-          style={{
-            padding: '16px 12px', borderRadius: 'var(--r-lg)', border: '2px solid var(--red)',
-            background: 'rgba(239,68,68,0.12)', cursor: 'pointer', fontFamily: 'inherit',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-            transition: 'all 0.2s', color: 'var(--red)',
-          }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.2)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.12)')}
+      {/* ── Primary Action Buttons ─────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+        {/* Report SOS */}
+        <button onClick={() => navigate('/report')} style={{
+          padding: '1.125rem 1rem', borderRadius: 14,
+          background: 'linear-gradient(135deg, #FEF2F2 0%, #FFF1F2 100%)',
+          border: '1.5px solid #FECACA',
+          cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center',
+          gap: '0.375rem', transition: 'all 0.2s', fontFamily: 'inherit',
+        }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 20px rgba(239,68,68,0.2)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; (e.currentTarget as HTMLElement).style.boxShadow = ''; }}
         >
-          <AlertTriangle size={24} />
-          <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Report Incident</span>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-3)', fontWeight: 400 }}>Alert nearby services</span>
+          <div style={{ width: 42, height: 42, borderRadius: 11, background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <AlertTriangle size={20} color="#EF4444" />
+          </div>
+          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#991B1B' }}>Report SOS</span>
+          <span style={{ fontSize: '0.68rem', color: '#B91C1C', opacity: 0.75 }}>Alert nearby services</span>
         </button>
-        <button
-          onClick={() => navigate('/journey')}
-          style={{
-            padding: '16px 12px', borderRadius: 'var(--r-lg)', border: '2px solid var(--blue)',
-            background: 'rgba(59,130,246,0.12)', cursor: 'pointer', fontFamily: 'inherit',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-            transition: 'all 0.2s', color: 'var(--blue)',
-          }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(59,130,246,0.22)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'rgba(59,130,246,0.12)')}
+
+        {/* Plan Journey */}
+        <button onClick={() => navigate('/journey')} style={{
+          padding: '1.125rem 1rem', borderRadius: 14,
+          background: 'linear-gradient(135deg, #EEF2FF 0%, #F5F3FF 100%)',
+          border: '1.5px solid #C7D2FE',
+          cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center',
+          gap: '0.375rem', transition: 'all 0.2s', fontFamily: 'inherit',
+        }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 20px rgba(79,70,229,0.15)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; (e.currentTarget as HTMLElement).style.boxShadow = ''; }}
         >
-          <Route size={24} />
-          <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Plan Journey</span>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-3)', fontWeight: 400 }}>Download offline maps</span>
+          <div style={{ width: 42, height: 42, borderRadius: 11, background: '#E0E7FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Route size={20} color="#4F46E5" />
+          </div>
+          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#312E81' }}>Plan Journey</span>
+          <span style={{ fontSize: '0.68rem', color: '#4338CA', opacity: 0.75 }}>Download offline maps</span>
         </button>
       </div>
 
-      {/* Quote of the day */}
-      <div style={{
-        background: 'linear-gradient(135deg, #0a1628 0%, #0f1e3d 100%)',
-        border: '1px solid rgba(59,130,246,0.2)',
-        borderRadius: 'var(--r-lg)', padding: '18px 20px', marginBottom: 20,
-      }}>
-        <div style={{ fontSize: '0.7rem', color: 'var(--blue)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
-          💡 Road Safety Quote
+      {/* ── Quick Access Grid ──────────────────────────── */}
+      <div className="card" style={{ padding: '1rem', marginBottom: '1rem' }}>
+        <div className="section-header" style={{ marginBottom: '0.75rem' }}>
+          <span className="section-title" style={{ fontSize: '0.9rem' }}>Quick Access</span>
+          <Link to="/nearme" style={{ fontSize: '0.78rem', color: '#4F46E5', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
+            View all <ArrowRight size={13} />
+          </Link>
         </div>
-        <p style={{ fontSize: '0.9rem', color: 'var(--text-1)', fontStyle: 'italic', lineHeight: 1.6, marginBottom: 8 }}>
-          "{quote.text}"
-        </p>
-        <div style={{ fontSize: '0.72rem', color: 'var(--text-3)' }}>— {quote.author}</div>
-      </div>
-
-      {/* Traffic Tip (rotating) */}
-      <div style={{
-        background: 'var(--bg-card)', border: '1px solid var(--border)',
-        borderRadius: 'var(--r-lg)', padding: '16px 20px', marginBottom: 20,
-        display: 'flex', gap: 16, alignItems: 'flex-start',
-      }}>
-        <div style={{
-          fontSize: '2rem', flexShrink: 0,
-          width: 52, height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'var(--bg-card2)', borderRadius: 'var(--r-md)',
-        }}>
-          {tip.icon}
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '0.7rem', color: 'var(--yellow)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
-            Traffic Rule Tip
-          </div>
-          <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: 4 }}>{tip.rule}</div>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-2)' }}>{tip.detail}</p>
-          {/* Dots */}
-          <div style={{ display: 'flex', gap: 4, marginTop: 10 }}>
-            {TRAFFIC_TIPS.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setTipIndex(i)}
-                style={{
-                  width: i === tipIndex ? 16 : 6, height: 6, borderRadius: 3, border: 'none',
-                  background: i === tipIndex ? 'var(--yellow)' : 'var(--border2)',
-                  cursor: 'pointer', transition: 'all 0.3s', padding: 0,
-                }}
-              />
-            ))}
-          </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
+          {QUICK_ACTIONS.map(a => (
+            <button key={a.label} onClick={() => navigate(a.path)}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.375rem',
+                padding: '0.875rem 0.5rem',
+                background: a.bg, border: `1.5px solid ${a.border}`,
+                borderRadius: 10, cursor: 'pointer',
+                transition: 'all 0.15s', fontFamily: 'inherit',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; }}
+            >
+              <span style={{ fontSize: '1.4rem' }}>{a.icon}</span>
+              <span style={{ fontSize: '0.68rem', fontWeight: 700, color: a.color, textAlign: 'center', lineHeight: 1.2 }}>{a.label}</span>
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Quick Access */}
-      <h3 style={{ marginBottom: 12 }}>Quick Access</h3>
-      <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: 10, marginBottom: 20,
-      }}>
-        {QUICK_ACTIONS.map(a => (
-          <button key={a.label} onClick={() => navigate(a.path)}
-            style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-              padding: '14px 8px', background: 'var(--bg-card)',
-              border: '1px solid var(--border)', borderRadius: 'var(--r-lg)',
-              cursor: 'pointer', transition: 'all 0.15s', color: 'var(--text-1)',
-              fontFamily: 'inherit',
-            }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLElement).style.borderColor = a.color;
-              (e.currentTarget as HTMLElement).style.background = 'var(--bg-hover)';
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)';
-              (e.currentTarget as HTMLElement).style.background = 'var(--bg-card)';
-            }}
-          >
-            <span style={{ fontSize: '1.5rem' }}>{a.icon}</span>
-            <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-2)' }}>{a.label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Active Incidents */}
+      {/* ── Active Incidents ───────────────────────────── */}
       {anomalies.length > 0 && (
-        <>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Activity size={17} color="var(--red)" />
+        <div style={{ marginBottom: '1rem' }}>
+          <div className="section-header">
+            <span className="section-title">
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#EF4444', animation: 'pulse-gps 1.5s infinite' }} />
               Active Incidents
               <span className="badge badge-red">{anomalies.length}</span>
-            </h3>
-            <Link to="/dashboard" style={{ fontSize: '0.8rem' }}>View all →</Link>
+            </span>
+            <Link to="/dashboard" style={{ fontSize: '0.78rem', color: '#4F46E5', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
+              View all <ArrowRight size={13} />
+            </Link>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {anomalies.map(a => {
               const sev = SEVERITY_META[a.severity];
               const cat = CATEGORY_META[a.category];
               return (
                 <div key={a.id} className="anomaly-item" onClick={() => navigate(`/incident/${a.id}`)}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <span style={{ fontSize: '1.1rem' }}>{cat.icon}</span>
-                      <span style={{ fontWeight: 600, fontSize: '0.88rem' }}>{cat.label}</span>
+                      <span style={{ fontWeight: 600, fontSize: '0.875rem', color: '#0F172A' }}>{cat.label}</span>
                       <span className="sev-pill" style={{ background: sev.bg, color: sev.color }}>{sev.label}</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--text-3)' }}>{timeAgo(a.createdAt)}</span>
-                      <ChevronRight size={14} color="var(--text-3)" />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#94A3B8' }}>{timeAgo(a.createdAt)}</span>
+                      <ChevronRight size={14} color="#94A3B8" />
                     </div>
                   </div>
-                  <p style={{ fontSize: '0.8rem', marginTop: 6, marginBottom: 0 }} className="truncate">{a.description}</p>
+                  <p style={{ fontSize: '0.78rem', marginTop: '0.375rem', color: '#64748B' }} className="truncate">{a.description}</p>
                 </div>
               );
             })}
           </div>
-        </>
+        </div>
       )}
 
-      {/* Navigate shortcut */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
-        <div className="card" style={{
-          background: 'linear-gradient(135deg, #0d1f0d 0%, #162716 100%)',
-          borderColor: 'rgba(34,197,94,0.2)', cursor: 'pointer', padding: '16px',
-        }} onClick={() => navigate('/navigation')}>
-          <Navigation size={20} color="var(--green)" style={{ marginBottom: 8 }} />
-          <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--green)', marginBottom: 2 }}>Navigate</div>
-          <p style={{ fontSize: '0.75rem' }}>Real-time turn-by-turn directions</p>
+      {/* ── Navigation + History ───────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+        <div style={{
+          background: 'linear-gradient(135deg, #ECFDF5, #F0FDF4)',
+          border: '1.5px solid #A7F3D0', borderRadius: 14, padding: '1rem',
+          cursor: 'pointer', transition: 'all 0.2s',
+        }}
+          onClick={() => navigate('/navigation')}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 16px rgba(16,185,129,0.15)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; (e.currentTarget as HTMLElement).style.boxShadow = ''; }}
+        >
+          <Navigation size={20} color="#059669" style={{ marginBottom: '0.5rem' }} />
+          <div style={{ fontWeight: 700, fontSize: '0.875rem', color: '#065F46', marginBottom: 2 }}>Navigate</div>
+          <p style={{ fontSize: '0.72rem', color: '#047857' }}>Turn-by-turn directions</p>
         </div>
-        <div className="card" style={{
-          background: 'linear-gradient(135deg, #1a1207 0%, #261a0a 100%)',
-          borderColor: 'rgba(234,179,8,0.2)', cursor: 'pointer', padding: '16px',
-        }} onClick={() => navigate('/report-history')}>
-          <History size={20} color="var(--yellow)" style={{ marginBottom: 8 }} />
-          <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--yellow)', marginBottom: 2 }}>Report History</div>
-          <p style={{ fontSize: '0.75rem' }}>View all reported incidents</p>
+        <div style={{
+          background: 'linear-gradient(135deg, #FFF7ED, #FFFBEB)',
+          border: '1.5px solid #FED7AA', borderRadius: 14, padding: '1rem',
+          cursor: 'pointer', transition: 'all 0.2s',
+        }}
+          onClick={() => navigate('/report-history')}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 16px rgba(249,115,22,0.15)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; (e.currentTarget as HTMLElement).style.boxShadow = ''; }}
+        >
+          <History size={20} color="#C2410C" style={{ marginBottom: '0.5rem' }} />
+          <div style={{ fontWeight: 700, fontSize: '0.875rem', color: '#9A3412', marginBottom: 2 }}>History</div>
+          <p style={{ fontSize: '0.72rem', color: '#C2410C' }}>View all reports</p>
         </div>
       </div>
 
-      {/* Emergency numbers */}
-      <div className="card" style={{ marginBottom: 8 }}>
-        <h3 style={{ marginBottom: 14, fontSize: '0.95rem' }}>📞 Emergency Numbers (India)</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-          {[
-            { label: 'Police', number: '100', color: 'var(--blue)' },
-            { label: 'Ambulance', number: '108', color: 'var(--red)' },
-            { label: 'Fire', number: '101', color: 'var(--orange)' },
-            { label: 'Highway Helpline', number: '1033', color: 'var(--yellow)' },
-            { label: 'Women Safety', number: '1091', color: 'var(--purple)' },
-            { label: 'Disaster', number: '112', color: 'var(--cyan)' },
-          ].map(e => (
-            <a key={e.label} href={`tel:${e.number}`}
-              style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                padding: '12px 8px', background: 'var(--bg-card2)', borderRadius: 'var(--r-md)',
-                textDecoration: 'none', border: '1px solid var(--border)',
-                transition: 'all 0.15s',
-              }}
+      {/* ── Safety Quote ───────────────────────────────── */}
+      <div style={{
+        background: 'linear-gradient(135deg, #EEF2FF 0%, #F5F3FF 100%)',
+        border: '1px solid #C7D2FE', borderRadius: 14, padding: '1.125rem',
+        marginBottom: '1rem', position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{ position: 'absolute', right: -20, top: -20, width: 80, height: 80, borderRadius: '50%', background: 'rgba(79,70,229,0.06)', pointerEvents: 'none' }} />
+        <div style={{ fontSize: '0.68rem', color: '#4F46E5', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <Zap size={11} fill="#4F46E5" /> Road Safety Quote
+        </div>
+        <p style={{ fontSize: '0.875rem', color: '#1E1B4B', fontStyle: 'italic', lineHeight: 1.6, marginBottom: '0.375rem' }}>
+          "{quote.text}"
+        </p>
+        <div style={{ fontSize: '0.7rem', color: '#6366F1', fontWeight: 500 }}>— {quote.author}</div>
+      </div>
+
+      {/* ── Traffic Tip (rotating) ─────────────────────── */}
+      <div className="card" style={{ padding: '1rem', marginBottom: '1rem', display: 'flex', gap: '0.875rem', alignItems: 'flex-start' }}>
+        <div style={{
+          fontSize: '1.75rem', flexShrink: 0,
+          width: 50, height: 50, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: '#F8FAFC', borderRadius: 12, border: '1px solid #E2E8F0',
+        }}>
+          {tip.icon}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '0.68rem', color: '#F59E0B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem' }}>
+            Traffic Rule
+          </div>
+          <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0F172A', marginBottom: '0.25rem' }}>{tip.rule}</div>
+          <p style={{ fontSize: '0.78rem', color: '#64748B', lineHeight: 1.5 }}>{tip.detail}</p>
+          {/* Dots */}
+          <div style={{ display: 'flex', gap: 4, marginTop: '0.625rem' }}>
+            {TRAFFIC_TIPS.map((_, i) => (
+              <button key={i} onClick={() => setTipIndex(i)} style={{
+                width: i === tipIndex ? 18 : 6, height: 6, borderRadius: 3, border: 'none',
+                background: i === tipIndex ? '#4F46E5' : '#E2E8F0',
+                cursor: 'pointer', transition: 'all 0.3s', padding: 0,
+              }} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Emergency Numbers ──────────────────────────── */}
+      <div className="card" style={{ padding: '1rem', marginBottom: '1rem' }}>
+        <div className="section-title" style={{ marginBottom: '0.75rem', fontSize: '0.9rem' }}>
+          <Phone size={15} color="#4F46E5" /> Emergency Numbers (India)
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
+          {EMERGENCY.map(e => (
+            <a key={e.label} href={`tel:${e.number}`} style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem',
+              padding: '0.75rem 0.5rem',
+              background: '#F8FAFC', borderRadius: 10, border: '1px solid #E2E8F0',
+              textDecoration: 'none', transition: 'all 0.15s',
+            }}
+              onMouseEnter={el => { (el.currentTarget as HTMLElement).style.borderColor = e.color; (el.currentTarget as HTMLElement).style.background = '#EEF2FF'; }}
+              onMouseLeave={el => { (el.currentTarget as HTMLElement).style.borderColor = '#E2E8F0'; (el.currentTarget as HTMLElement).style.background = '#F8FAFC'; }}
             >
-              <span style={{ fontSize: '1.2rem', fontWeight: 800, color: e.color }}>{e.number}</span>
-              <span style={{ fontSize: '0.65rem', color: 'var(--text-3)', textAlign: 'center', fontWeight: 600 }}>{e.label}</span>
+              <span style={{ fontSize: '1.1rem', fontWeight: 800, color: e.color }}>{e.number}</span>
+              <span style={{ fontSize: '0.62rem', color: '#64748B', textAlign: 'center', fontWeight: 600 }}>{e.label}</span>
             </a>
           ))}
         </div>
       </div>
 
       <style>{`
-        @keyframes pulse-dot {
+        @keyframes pulse-gps {
           0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(1.3); }
+          50% { opacity: 0.5; transform: scale(1.4); }
         }
       `}</style>
     </div>

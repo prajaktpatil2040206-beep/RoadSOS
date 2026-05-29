@@ -9,19 +9,22 @@ import { useGoogleMapsLoader } from '../hooks/useGoogleMapsLoader';
 import { SEVERITY_META, CATEGORY_META } from '../types';
 import type { AnomalyCategory, AnomalySeverity } from '../types';
 import toast from 'react-hot-toast';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 
 const MAP_STYLES = [
-  { elementType: 'geometry', stylers: [{ color: '#1d2033' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#8c9aad' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2d3350' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0d1117' }] },
+  { elementType: 'geometry', stylers: [{ color: '#f8fafc' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#64748b' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#ffffff' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#e2e8f0' }] },
+  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#cbd5e1' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#e0f2fe' }] },
 ];
 
 export default function ReportAnomaly() {
   const navigate = useNavigate();
   const { user } = useUserStore();
   const geo = useGeolocation();
-  const { isLoaded } = useGoogleMapsLoader();
+  const { isLoaded, loadError } = useGoogleMapsLoader();
 
   const [severity, setSeverity] = useState<AnomalySeverity>(3);
   const [category, setCategory] = useState<AnomalyCategory>('vehicle_collision');
@@ -103,23 +106,97 @@ export default function ReportAnomaly() {
   }
 
   return (
-    <div className="page">
-      <div style={{ maxWidth: 700, margin: '0 auto' }}>
+    <div className="page" style={{ overflowY: 'auto' }}>
+      <style>{`
+        .category-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+          gap: 10px;
+        }
+        .category-btn {
+          padding: 12px 8px;
+          border: 1px solid #E2E8F0;
+          border-radius: var(--r-md);
+          background: #F8FAFC;
+          cursor: pointer;
+          font-family: inherit;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 6px;
+        }
+        .category-btn:hover {
+          transform: translateY(-2px);
+          background: #F1F5F9;
+          border-color: #CBD5E1;
+          box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+        }
+        .category-btn.active {
+          border-width: 2px;
+          border-color: var(--primary);
+          background: #EEF2FF;
+          box-shadow: 0 0 12px rgba(79, 70, 229, 0.15);
+        }
+        .severity-grid {
+          display: flex;
+          gap: 10px;
+        }
+        .severity-btn {
+          flex: 1;
+          padding: 12px 6px;
+          border: 1px solid #E2E8F0;
+          border-radius: var(--r-md);
+          background: #F8FAFC;
+          cursor: pointer;
+          font-family: inherit;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+        }
+        .severity-btn:hover {
+          transform: translateY(-2px);
+          background: #F1F5F9;
+          border-color: #CBD5E1;
+        }
+        .severity-btn.active {
+          border-width: 2px;
+        }
+        .form-section-header {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 14px;
+          border-bottom: 1px solid #E2E8F0;
+          padding-bottom: 8px;
+        }
+        .form-section-header h3 {
+          font-size: 1rem;
+          font-weight: 700;
+          color: #0F172A;
+        }
+      `}</style>
+      <div style={{ maxWidth: 720, margin: '0 auto', paddingBottom: 40 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-          <button className="btn btn-ghost btn-icon btn-sm" onClick={() => navigate(-1)}>
+          <button className="btn btn-ghost btn-icon btn-sm" onClick={() => navigate(-1)} style={{ color: '#64748B' }}>
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <AlertTriangle size={22} color="var(--red)" /> Report Incident
+            <h1 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '1.4rem', fontWeight: 800, color: '#0F172A' }}>
+              <AlertTriangle size={24} color="#EF4444" /> Report Incident
             </h1>
-            <p style={{ fontSize: '0.82rem', marginTop: 2 }}>Report a road accident or emergency to alert nearby responders</p>
+            <p style={{ fontSize: '0.82rem', marginTop: 2, color: '#64748B' }}>Report a road accident or emergency to alert nearby responders</p>
           </div>
         </div>
 
         {/* Location */}
         <div className="card" style={{ marginBottom: 16 }}>
-          <h3 style={{ marginBottom: 12 }}>📍 Incident Location</h3>
+          <div className="form-section-header">
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: 6 }}>📍 Incident Location</h3>
+          </div>
+          
           <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
             <button className={`btn btn-sm ${useCurrentLoc ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setUseCurrentLoc(true)}>
@@ -131,12 +208,30 @@ export default function ReportAnomaly() {
             </button>
           </div>
 
-          {isLoaded && (
-            <div style={{ borderRadius: 'var(--r-md)', overflow: 'hidden', marginBottom: 8 }}>
+          {loadError ? (
+            <div style={{ borderRadius: 'var(--r-md)', overflow: 'hidden', marginBottom: 8, height: 420, border: '1px solid #E2E8F0' }}>
+              <iframe
+                title="Incident Location Map"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                src={`https://maps.google.com/maps?q=${lat || 20.5937},${lng || 78.9629}&t=m&z=15&output=embed`}
+                allowFullScreen
+              />
+            </div>
+          ) : isLoaded ? (
+            <div style={{ borderRadius: 'var(--r-md)', overflow: 'hidden', marginBottom: 8, border: '1px solid #E2E8F0' }}>
               <GoogleMap
-                mapContainerStyle={{ width: '100%', height: 220 }}
+                mapContainerStyle={{ width: '100%', height: 420 }}
                 center={center} zoom={15}
-                options={{ styles: MAP_STYLES, disableDefaultUI: true, zoomControl: true, clickableIcons: false }}
+                options={{
+                  styles: MAP_STYLES,
+                  disableDefaultUI: false,
+                  zoomControl: true,
+                  streetViewControl: true,
+                  mapTypeControl: true,
+                  clickableIcons: false
+                }}
                 onClick={handleMapClick}
               >
                 {lat && lng && (
@@ -146,63 +241,80 @@ export default function ReportAnomaly() {
                 )}
               </GoogleMap>
             </div>
+          ) : (
+            <div style={{ height: 420, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC', borderRadius: 'var(--r-md)', border: '1px solid #E2E8F0' }}>
+              <LoadingSpinner text="Loading map view…" />
+            </div>
           )}
 
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-2)' }}>
+          <div style={{
+            fontSize: '0.8rem', color: '#475569', background: '#F8FAFC',
+            padding: '8px 12px', borderRadius: 'var(--r-sm)', border: '1px solid #E2E8F0'
+          }}>
             {useCurrentLoc
-              ? geo.loading ? 'Detecting location…' : lat ? `📍 ${lat.toFixed(5)}, ${lng?.toFixed(5)}` : 'Location unavailable'
-              : pinAddress || (pinLat ? `${pinLat.toFixed(5)}, ${pinLng?.toFixed(5)}` : '⬆ Click on map to pin location')
+              ? geo.loading ? '⏳ Detecting location…' : lat ? `📍 Current Location: ${lat.toFixed(5)}, ${lng?.toFixed(5)}` : 'Location unavailable'
+              : pinAddress || (pinLat ? `📍 Pinned Location: ${pinLat.toFixed(5)}, ${pinLng?.toFixed(5)}` : '⬆ Click on map to pin location')
             }
           </div>
         </div>
 
         {/* Category */}
         <div className="card" style={{ marginBottom: 16 }}>
-          <h3 style={{ marginBottom: 12 }}>🚧 Incident Type</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
-            {(Object.entries(CATEGORY_META) as [AnomalyCategory, typeof CATEGORY_META[AnomalyCategory]][]).map(([key, meta]) => (
-              <button key={key} onClick={() => setCategory(key)}
-                style={{
-                  padding: '10px 6px', border: `2px solid ${category === key ? 'var(--primary)' : 'var(--border)'}`,
-                  borderRadius: 'var(--r-md)', background: category === key ? 'var(--primary-soft)' : 'var(--bg-card2)',
-                  cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                }}>
-                <span style={{ fontSize: '1.4rem' }}>{meta.icon}</span>
-                <span style={{ fontSize: '0.68rem', fontWeight: 600, color: category === key ? 'var(--primary)' : 'var(--text-2)', textAlign: 'center' }}>{meta.label}</span>
-              </button>
-            ))}
+          <div className="form-section-header">
+            <h3>🚧 Incident Type</h3>
+          </div>
+          <div className="category-grid">
+            {(Object.entries(CATEGORY_META) as [AnomalyCategory, typeof CATEGORY_META[AnomalyCategory]][]).map(([key, meta]) => {
+              const isActive = category === key;
+              return (
+                <button key={key} onClick={() => setCategory(key)}
+                  className={`category-btn ${isActive ? 'active' : ''}`}
+                >
+                  <span style={{ fontSize: '1.5rem' }}>{meta.icon}</span>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: isActive ? 'var(--primary)' : '#64748B', textAlign: 'center' }}>
+                    {meta.label}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Severity */}
         <div className="card" style={{ marginBottom: 16 }}>
-          <h3 style={{ marginBottom: 12 }}>🔴 Severity Level</h3>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="form-section-header">
+            <h3>🔴 Severity Level</h3>
+          </div>
+          <div className="severity-grid">
             {([1, 2, 3, 4, 5] as AnomalySeverity[]).map(s => {
               const meta = SEVERITY_META[s];
+              const isActive = severity === s;
               return (
                 <button key={s} onClick={() => setSeverity(s)}
+                  className={`severity-btn ${isActive ? 'active' : ''}`}
                   style={{
-                    flex: 1, padding: '10px 4px', border: `2px solid ${severity === s ? meta.color : 'var(--border)'}`,
-                    borderRadius: 'var(--r-md)', background: severity === s ? meta.bg : 'var(--bg-card2)',
-                    cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                    borderColor: isActive ? meta.color : '#E2E8F0',
+                    background: isActive ? meta.bg : '#F8FAFC',
+                    boxShadow: isActive ? `0 0 10px ${meta.color}33` : 'none',
                   }}>
-                  <span style={{ fontSize: '1.2rem', fontWeight: 800, color: meta.color }}>{s}</span>
-                  <span style={{ fontSize: '0.62rem', fontWeight: 700, color: meta.color, textAlign: 'center' }}>{meta.label}</span>
+                  <span style={{ fontSize: '1.3rem', fontWeight: 800, color: isActive ? meta.color : '#0F172A' }}>{s}</span>
+                  <span style={{ fontSize: '0.66rem', fontWeight: 700, color: isActive ? meta.color : '#64748B', textAlign: 'center' }}>{meta.label}</span>
                 </button>
               );
             })}
           </div>
-          <p style={{ marginTop: 10, fontSize: '0.8rem', color: SEVERITY_META[severity].color }}>
+          <div style={{
+            marginTop: 12, padding: '10px 14px', background: SEVERITY_META[severity].bg,
+            borderRadius: 'var(--r-md)', border: `1px solid ${SEVERITY_META[severity].color}33`,
+            color: SEVERITY_META[severity].color, fontSize: '0.8rem', fontWeight: 500
+          }}>
             {SEVERITY_META[severity].description}
-          </p>
+          </div>
         </div>
 
         {/* Description */}
         <div className="card" style={{ marginBottom: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div className="form-section-header" style={{ justifyContent: 'space-between', borderBottom: 'none', marginBottom: 0, paddingBottom: 0 }}>
             <h3>📝 Description</h3>
             <button
               className={`btn btn-sm ${recording ? 'btn-danger' : 'btn-secondary'}`}
@@ -212,8 +324,8 @@ export default function ReportAnomaly() {
             </button>
           </div>
           {recording && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: 'var(--red)', fontSize: '0.82rem' }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--red)', animation: 'pulse-ring 1s infinite' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '8px 0', color: '#EF4444', fontSize: '0.82rem', fontWeight: 600 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#EF4444', animation: 'ct-spin 1s infinite' }} />
               Recording… speak clearly
             </div>
           )}
@@ -223,20 +335,21 @@ export default function ReportAnomaly() {
             onChange={e => setDescription(e.target.value)}
             placeholder="Describe the incident: e.g., 'Bus hit a car at main junction, 3 people injured, vehicle on fire'"
             rows={4}
+            style={{ marginTop: 12 }}
           />
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: 6, textAlign: 'right' }}>
+          <div style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: 6, textAlign: 'right', fontWeight: 600 }}>
             {description.length} characters
           </div>
         </div>
 
-        <button className="btn btn-danger btn-lg" onClick={handleSubmit} disabled={submitting}
-          style={{ width: '100%', justifyContent: 'center' }}>
+        <button className="btn btn-primary btn-lg" onClick={handleSubmit} disabled={submitting}
+          style={{ width: '100%', justifyContent: 'center', background: '#EF4444', boxShadow: '0 4px 16px rgba(239, 68, 68, 0.35)' }}>
           {submitting
             ? <><div className="spinner" /> Alerting responders…</>
             : <><Send size={18} /> Report Incident — Alert Nearby Services</>
           }
         </button>
-        <p style={{ textAlign: 'center', fontSize: '0.78rem', marginTop: 10 }}>
+        <p style={{ textAlign: 'center', fontSize: '0.78rem', marginTop: 10, color: '#64748B' }}>
           This will instantly notify nearby hospitals, police, and rescue services
         </p>
       </div>

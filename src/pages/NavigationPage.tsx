@@ -1,18 +1,26 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { GoogleMap, MarkerF, DirectionsRenderer } from '@react-google-maps/api';
+import { GoogleMap, MarkerF, DirectionsRenderer, PolylineF } from '@react-google-maps/api';
 import { Navigation, MapPin, Search, X, Gauge, Clock, ArrowLeft, Crosshair } from 'lucide-react';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { useGoogleMapsLoader } from '../hooks/useGoogleMapsLoader';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
-const HYBRID_OPTIONS = {
-  mapTypeId: 'hybrid',
+const LIGHT_MAP_OPTIONS = {
+  mapTypeId: 'roadmap',
   disableDefaultUI: false,
   zoomControl: true,
-  streetViewControl: false,
+  streetViewControl: true,
   mapTypeControl: true,
   fullscreenControl: false,
+  styles: [
+    { elementType: 'geometry', stylers: [{ color: '#f8fafc' }] },
+    { elementType: 'labels.text.fill', stylers: [{ color: '#64748b' }] },
+    { elementType: 'labels.text.stroke', stylers: [{ color: '#ffffff' }] },
+    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#e2e8f0' }] },
+    { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#cbd5e1' }] },
+    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#e0f2fe' }] },
+  ]
 };
 
 export default function NavigationPage() {
@@ -23,7 +31,7 @@ export default function NavigationPage() {
   const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
   const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
 
-  const { isLoaded } = useGoogleMapsLoader();
+  const { isLoaded, loadError } = useGoogleMapsLoader();
 
   const [inputVal, setInputVal] = useState(params.get('dest') || '');
   const [suggestions, setSuggestions] = useState<google.maps.places.AutocompletePrediction[]>([]);
@@ -36,69 +44,62 @@ export default function NavigationPage() {
   const [pinMode, setPinMode] = useState(false);
   const [pinnedLoc, setPinnedLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [userPos, setUserPos] = useState<google.maps.LatLngLiteral | null>(null);
+  const [routeStart, setRouteStart] = useState<google.maps.LatLngLiteral | null>(null);
+  const [routeEnd, setRouteEnd] = useState<google.maps.LatLngLiteral | null>(null);
+
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const sessionTokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
 
   useEffect(() => {
     if (geo.lat && geo.lng) setUserPos({ lat: geo.lat, lng: geo.lng });
   }, [geo.lat, geo.lng]);
 
-  // Init services when map loads
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
-    placesServiceRef.current = new google.maps.places.PlacesService(map);
-    autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
   }, []);
 
-  // Also init autocomplete service when isLoaded even without map
   useEffect(() => {
-    if (isLoaded && !autocompleteServiceRef.current) {
-      autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
-    }
+    // No-op
   }, [isLoaded]);
 
-  // Get autocomplete suggestions
-  const fetchSuggestions = useCallback((val: string) => {
+  const fetchSuggestions = useCallback(async (val: string) => {
     if (!val.trim() || !isLoaded) { setSuggestions([]); return; }
-    if (!autocompleteServiceRef.current) {
-      autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
-    }
-    autocompleteServiceRef.current.getPlacePredictions(
-      { input: val, types: [] },
-      (preds, status) => {
-        if (status === google.maps.places.PlacesServiceStatus.OK && preds) {
-          setSuggestions(preds.slice(0, 5));
-          setShowSuggestions(true);
-        } else {
-          setSuggestions([]);
-        }
+    
+    try {
+      const placesLib = google.maps.places as any;
+      if (!sessionTokenRef.current) {
+        sessionTokenRef.current = new placesLib.AutocompleteSessionToken();
       }
-    );
+
+      const response = await placesLib.AutocompleteSuggestion.fetchAutocompleteSuggestions({
+        input: val,
+        sessionToken: sessionTokenRef.current
+      });
+
+      if (response && response.suggestions) {
+        const preds = response.suggestions.map((s: any) => ({
+          description: s.placePrediction.text.text,
+          place_id: s.placePrediction.placeId,
+          structured_formatting: {
+            main_text: s.placePrediction.text.text.split(',')[0],
+            secondary_text: s.placePrediction.text.text.split(',').slice(1).join(',').trim() || ''
+          }
+        }));
+        setSuggestions(preds.slice(0, 5));
+        setShowSuggestions(true);
+      } else {
+        setSuggestions([]);
+      }
+    } catch (err) {
+      console.error('Autocomplete fetch failed:', err);
+      setSuggestions([]);
+    }
   }, [isLoaded]);
 
   useEffect(() => {
     const timer = setTimeout(() => fetchSuggestions(inputVal), 300);
     return () => clearTimeout(timer);
   }, [inputVal, fetchSuggestions]);
-
-  // Select a suggestion → get details → route
-  const selectSuggestion = useCallback((pred: google.maps.places.AutocompletePrediction) => {
-    setInputVal(pred.description);
-    setSuggestions([]);
-    setShowSuggestions(false);
-
-    if (!isLoaded) return;
-    const service = placesServiceRef.current || new google.maps.places.PlacesService(document.createElement('div'));
-    service.getDetails({ placeId: pred.place_id, fields: ['geometry', 'name', 'formatted_address'] }, (place, st) => {
-      if (st === google.maps.places.PlacesServiceStatus.OK && place?.geometry?.location) {
-        const lat = place.geometry.location.lat();
-        const lng = place.geometry.location.lng();
-        const dest = { name: pred.description, lat, lng };
-        setDestination(dest);
-        setPinnedLoc(null);
-        buildRoute({ lat, lng });
-      }
-    });
-  }, [isLoaded]);
 
   const buildRoute = useCallback((dest: { lat: number; lng: number }) => {
     if (!userPos || !isLoaded) return;
@@ -116,29 +117,66 @@ export default function NavigationPage() {
       if (status === 'OK' && result) {
         setDirections(result);
         const leg = result.routes[0]?.legs[0];
-        if (leg) setRouteInfo({
-          distance: leg.distance?.text || '',
-          duration: leg.duration_in_traffic?.text || leg.duration?.text || '',
-        });
+        if (leg) {
+          setRouteInfo({
+            distance: leg.distance?.text || '',
+            duration: leg.duration_in_traffic?.text || leg.duration?.text || '',
+          });
+          setRouteStart({ lat: leg.start_location.lat(), lng: leg.start_location.lng() });
+          setRouteEnd({ lat: leg.end_location.lat(), lng: leg.end_location.lng() });
+        }
         setNavigating(true);
-        // Fit map to route
         mapRef.current?.fitBounds(result.routes[0].bounds);
       } else {
         alert('Could not find route. Try searching for a more specific location.');
         setDirections(null);
+        setRouteStart(null);
+        setRouteEnd(null);
       }
       setLoading(false);
     });
   }, [userPos, isLoaded]);
 
-  // Handle map click for pin mode
+  const selectSuggestion = useCallback(async (pred: any) => {
+    setInputVal(pred.description);
+    setSuggestions([]);
+    setShowSuggestions(false);
+
+    if (!isLoaded) return;
+
+    try {
+      const placesLib = google.maps.places as any;
+      const place = new placesLib.Place({
+        id: pred.place_id,
+      });
+
+      await place.fetchFields({
+        fields: ['location', 'displayName']
+      });
+
+      sessionTokenRef.current = new placesLib.AutocompleteSessionToken();
+
+      if (place.location) {
+        const lat = place.location.lat();
+        const lng = place.location.lng();
+        const dest = { name: pred.description, lat, lng };
+        setDestination(dest);
+        setPinnedLoc(null);
+        buildRoute({ lat, lng });
+      }
+    } catch (err) {
+      console.error('Failed to get place details via new API:', err);
+    }
+  }, [isLoaded, buildRoute]);
+
+  // buildRoute moved above selectSuggestion
+
   const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
     if (!pinMode || !e.latLng) return;
     const lat = e.latLng.lat();
     const lng = e.latLng.lng();
     setPinnedLoc({ lat, lng });
 
-    // Reverse geocode
     const gc = new google.maps.Geocoder();
     gc.geocode({ location: { lat, lng } }, (results, status) => {
       if (status === 'OK' && results?.[0]) {
@@ -154,13 +192,17 @@ export default function NavigationPage() {
     buildRoute({ lat, lng });
   }, [pinMode, buildRoute]);
 
-  // Go button with typed text (not autocomplete)
   const handleGo = useCallback(() => {
     if (!inputVal.trim() || !userPos || !isLoaded) return;
+    
+    if (suggestions.length > 0) {
+      selectSuggestion(suggestions[0]);
+      return;
+    }
+
     setSuggestions([]);
     setShowSuggestions(false);
 
-    // Try to geocode the typed input
     const gc = new google.maps.Geocoder();
     gc.geocode({ address: inputVal }, (results, status) => {
       if (status === 'OK' && results?.[0]?.geometry?.location) {
@@ -177,6 +219,8 @@ export default function NavigationPage() {
 
   function clearRoute() {
     setDirections(null);
+    setRouteStart(null);
+    setRouteEnd(null);
     setNavigating(false);
     setDestination(null);
     setPinnedLoc(null);
@@ -194,22 +238,22 @@ export default function NavigationPage() {
   const center = userPos || { lat: 20.5937, lng: 78.9629 };
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-base)', minHeight: 0 }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#F8FAFC', minHeight: 0 }}>
       {/* Top controls */}
       <div style={{
-        padding: '12px 16px', background: 'var(--bg-card)',
-        borderBottom: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 10,
-        flexShrink: 0, zIndex: 20,
+        padding: '12px 16px', background: '#fff',
+        borderBottom: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: 10,
+        flexShrink: 0, zIndex: 20, boxShadow: '0 1px 3px rgba(15,23,42,0.05)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button className="btn btn-ghost btn-icon btn-sm" onClick={() => navigate(-1)}><ArrowLeft size={16} /></button>
-          <h2 style={{ fontSize: '1rem' }}>Navigation</h2>
+          <button className="btn btn-ghost btn-icon btn-sm" onClick={() => navigate(-1)} style={{ color: '#64748B' }}><ArrowLeft size={16} /></button>
+          <h2 style={{ fontSize: '1rem', fontWeight: 800, color: '#0F172A' }}>Navigation</h2>
           {routeInfo && (
             <div style={{ marginLeft: 'auto', display: 'flex', gap: 12 }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem', color: 'var(--blue)' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem', color: '#4F46E5', fontWeight: 700 }}>
                 <MapPin size={13} /> {routeInfo.distance}
               </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem', color: 'var(--green)' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem', color: '#10B981', fontWeight: 700 }}>
                 <Clock size={13} /> {routeInfo.duration}
               </span>
             </div>
@@ -219,7 +263,7 @@ export default function NavigationPage() {
         {/* Destination search */}
         <div style={{ display: 'flex', gap: 8 }}>
           <div style={{ flex: 1, position: 'relative' }}>
-            <Search size={15} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', pointerEvents: 'none', zIndex: 1 }} />
+            <Search size={15} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', pointerEvents: 'none', zIndex: 1 }} />
             <input
               className="input"
               style={{ paddingLeft: 34, height: 38, fontSize: '0.85rem' }}
@@ -234,8 +278,8 @@ export default function NavigationPage() {
             {showSuggestions && suggestions.length > 0 && (
               <div ref={suggestionsRef} style={{
                 position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 999,
-                background: 'var(--bg-card)', border: '1px solid var(--border)',
-                borderRadius: 'var(--r-md)', marginTop: 4, boxShadow: 'var(--shadow-lg)',
+                background: '#fff', border: '1px solid #E2E8F0',
+                borderRadius: 'var(--r-md)', marginTop: 4, boxShadow: '0 10px 25px rgba(15,23,42,0.1)',
                 overflow: 'hidden',
               }}>
                 {suggestions.map(pred => (
@@ -244,19 +288,19 @@ export default function NavigationPage() {
                     onMouseDown={() => selectSuggestion(pred)}
                     style={{
                       padding: '10px 14px', cursor: 'pointer',
-                      borderBottom: '1px solid var(--border)',
+                      borderBottom: '1px solid #F1F5F9',
                       display: 'flex', alignItems: 'flex-start', gap: 10,
                       transition: 'background 0.1s',
                     }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#F8FAFC')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
-                    <MapPin size={14} color="var(--primary)" style={{ flexShrink: 0, marginTop: 2 }} />
+                    <MapPin size={14} color="#4F46E5" style={{ flexShrink: 0, marginTop: 2 }} />
                     <div>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-1)' }}>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0F172A' }}>
                         {pred.structured_formatting.main_text}
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>
+                      <div style={{ fontSize: '0.75rem', color: '#64748B' }}>
                         {pred.structured_formatting.secondary_text}
                       </div>
                     </div>
@@ -280,24 +324,24 @@ export default function NavigationPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.78rem' }}>
           <span style={{
             width: 8, height: 8, borderRadius: '50%',
-            background: geo.lat ? 'var(--green)' : 'var(--red)',
+            background: geo.lat ? '#10B981' : '#EF4444',
             display: 'inline-block', flexShrink: 0,
           }} />
-          <span style={{ color: 'var(--text-3)', flex: 1 }}>
+          <span style={{ color: '#64748B', flex: 1 }}>
             {geo.loading ? 'Detecting…' : geo.lat ? `📍 ${geo.lat.toFixed(5)}, ${geo.lng?.toFixed(5)}` : 'Location unavailable'}
           </span>
           {geo.speed !== null && (
-            <span style={{ color: 'var(--cyan)', display: 'flex', alignItems: 'center', gap: 3 }}>
+            <span style={{ color: '#06B6D4', display: 'flex', alignItems: 'center', gap: 3, fontWeight: 700 }}>
               <Gauge size={12} /> {Math.round((geo.speed || 0) * 3.6)} km/h
             </span>
           )}
           <button
             onClick={() => setPinMode(!pinMode)}
             style={{
-              padding: '3px 10px', borderRadius: 'var(--r-sm)', border: `1px solid ${pinMode ? 'var(--primary)' : 'var(--border)'}`,
-              background: pinMode ? 'var(--primary-soft)' : 'transparent', color: pinMode ? 'var(--primary)' : 'var(--text-2)',
+              padding: '4px 10px', borderRadius: 'var(--r-sm)', border: `1px solid ${pinMode ? '#4F46E5' : '#E2E8F0'}`,
+              background: pinMode ? '#EEF2FF' : '#F1F5F9', color: pinMode ? '#4F46E5' : '#475569',
               fontFamily: 'inherit', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 4,
+              display: 'flex', alignItems: 'center', gap: 4, transition: 'all 0.15s',
             }}
           >
             <Crosshair size={12} />
@@ -308,8 +352,17 @@ export default function NavigationPage() {
 
       {/* Map */}
       <div style={{ flex: 1, position: 'relative', minHeight: 0, cursor: pinMode ? 'crosshair' : 'default' }}>
-        {!isLoaded ? (
-          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-base)' }}>
+        {loadError ? (
+          <iframe
+            title="Navigation Map"
+            width="100%"
+            height="100%"
+            style={{ border: 0 }}
+            src={`https://maps.google.com/maps?q=${center.lat},${center.lng}&t=m&z=14&output=embed`}
+            allowFullScreen
+          />
+        ) : !isLoaded ? (
+          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
             <LoadingSpinner text="Loading map…" />
           </div>
         ) : (
@@ -317,24 +370,24 @@ export default function NavigationPage() {
             mapContainerStyle={{ width: '100%', height: '100%' }}
             center={center}
             zoom={14}
-            options={HYBRID_OPTIONS}
+            options={LIGHT_MAP_OPTIONS}
             onLoad={onMapLoad}
             onClick={handleMapClick}
           >
             {/* User position */}
-            {userPos && !directions && (
+            {userPos && (
               <MarkerF position={userPos}
                 icon={{
                   path: google.maps.SymbolPath.CIRCLE,
-                  scale: 10, fillColor: '#3b82f6', fillOpacity: 1,
+                  scale: 10, fillColor: '#3B82F6', fillOpacity: 1,
                   strokeColor: '#fff', strokeWeight: 2,
                 }}
               />
             )}
 
-            {/* Pinned destination */}
-            {pinnedLoc && !directions && (
-              <MarkerF position={pinnedLoc}
+            {/* Destination / Pinned Location */}
+            {(pinnedLoc || destination) && (
+              <MarkerF position={pinnedLoc || destination!}
                 icon={{ url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png' }}
               />
             )}
@@ -344,8 +397,28 @@ export default function NavigationPage() {
               <DirectionsRenderer
                 directions={directions}
                 options={{
-                  suppressMarkers: false,
-                  polylineOptions: { strokeColor: '#ef4444', strokeWeight: 5, strokeOpacity: 0.9 },
+                  suppressMarkers: true,
+                  polylineOptions: { strokeColor: '#4F46E5', strokeWeight: 5, strokeOpacity: 0.8 },
+                }}
+              />
+            )}
+
+            {/* Dotted Lines for Off-Road sections */}
+            {directions && userPos && routeStart && (
+              <PolylineF
+                path={[userPos, routeStart]}
+                options={{
+                  strokeColor: '#64748B', strokeOpacity: 0, strokeWeight: 0,
+                  icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 3 }, offset: '0', repeat: '15px' }],
+                }}
+              />
+            )}
+            {directions && destination && routeEnd && (
+              <PolylineF
+                path={[routeEnd, destination]}
+                options={{
+                  strokeColor: '#64748B', strokeOpacity: 0, strokeWeight: 0,
+                  icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 3 }, offset: '0', repeat: '15px' }],
                 }}
               />
             )}
@@ -356,9 +429,9 @@ export default function NavigationPage() {
         {pinMode && (
           <div style={{
             position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)',
-            background: 'var(--primary)', color: '#fff', padding: '8px 16px',
+            background: '#4F46E5', color: '#fff', padding: '8px 16px',
             borderRadius: 'var(--r-full)', fontSize: '0.82rem', fontWeight: 600,
-            boxShadow: 'var(--shadow-lg)', whiteSpace: 'nowrap',
+            boxShadow: '0 4px 14px rgba(79, 70, 229, 0.4)', whiteSpace: 'nowrap',
             display: 'flex', alignItems: 'center', gap: 6,
           }}>
             <Crosshair size={14} /> Click anywhere on the map to set destination
@@ -372,27 +445,34 @@ export default function NavigationPage() {
             display: 'flex', gap: 10,
           }}>
             <button className="btn btn-primary" onClick={openInGoogleMaps}
-              style={{ boxShadow: 'var(--shadow-lg)' }}>
+              style={{ boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)' }}>
               <Navigation size={16} /> Open Turn-by-Turn in Google Maps
             </button>
           </div>
         )}
 
         {/* Center on me button */}
-        {isLoaded && userPos && (
-          <button
-            onClick={() => mapRef.current?.panTo(userPos)}
-            style={{
-              position: 'absolute', bottom: navigating ? 70 : 20, right: 16,
-              width: 44, height: 44, borderRadius: '50%',
-              background: 'var(--bg-card)', border: '1px solid var(--border)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', boxShadow: 'var(--shadow-md)',
-            }}
-          >
-            <Crosshair size={20} color="var(--primary)" />
-          </button>
-        )}
+        <button
+          onClick={async () => {
+            const fresh = await geo.refresh();
+            if (fresh) {
+              setUserPos(fresh);
+              mapRef.current?.panTo(fresh);
+            } else if (geo.error) {
+              alert(geo.error);
+            }
+          }}
+          style={{
+            position: 'absolute', bottom: navigating ? 70 : 20, right: 16,
+            width: 44, height: 44, borderRadius: '50%',
+            background: '#fff', border: '1px solid #E2E8F0',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', boxShadow: '0 4px 10px rgba(15,23,42,0.1)',
+          }}
+          title="Center on me"
+        >
+          <Crosshair size={20} color="#4F46E5" />
+        </button>
       </div>
     </div>
   );

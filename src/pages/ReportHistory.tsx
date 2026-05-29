@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { subscribeToAnomalies } from '../services/anomalyService';
 import type { Anomaly, AnomalyStatus } from '../types';
 import { SEVERITY_META, CATEGORY_META } from '../types';
-import { History, Search, X, ChevronRight, Filter, TrendingDown, Clock, CheckCircle } from 'lucide-react';
+import { History, Search, X, ChevronRight, TrendingDown, Clock, CheckCircle } from 'lucide-react';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
 type SortKey = 'recent' | 'severity_asc' | 'severity_desc' | 'resolved';
@@ -89,14 +89,14 @@ export default function ReportHistory() {
   ];
 
   return (
-    <div className="page">
-      <div style={{ maxWidth: 800, margin: '0 auto' }}>
+    <div className="page" style={{ overflowY: 'auto' }}>
+      <div style={{ maxWidth: 800, margin: '0 auto', paddingBottom: '2rem' }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <h1 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <History size={22} color="var(--yellow)" /> Report History
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '1.4rem', fontWeight: 800, color: '#0F172A' }}>
+            <History size={22} color="#D97706" /> Report History
           </h1>
-          <button className="btn btn-danger btn-sm" onClick={() => navigate('/report')}>
+          <button className="btn btn-primary btn-sm" onClick={() => navigate('/report')} style={{ background: '#EF4444' }}>
             + Report Incident
           </button>
         </div>
@@ -104,10 +104,10 @@ export default function ReportHistory() {
         {/* Stats row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 18 }}>
           {[
-            { label: 'Total', count: counts.all, color: 'var(--text-1)', bg: 'var(--bg-card2)' },
-            { label: 'Active', count: counts.reported, color: 'var(--red)', bg: 'rgba(239,68,68,0.08)' },
-            { label: 'Responding', count: counts.responding, color: 'var(--yellow)', bg: 'rgba(234,179,8,0.08)' },
-            { label: 'Resolved', count: counts.resolved, color: 'var(--green)', bg: 'rgba(34,197,94,0.08)' },
+            { label: 'Total', count: counts.all, color: '#475569', bg: '#F1F5F9' },
+            { label: 'Active', count: counts.reported, color: '#EF4444', bg: '#FEF2F2' },
+            { label: 'Responding', count: counts.responding, color: '#D97706', bg: '#FFFBEB' },
+            { label: 'Resolved', count: counts.resolved, color: '#10B981', bg: '#ECFDF5' },
           ].map(s => (
             <div
               key={s.label}
@@ -119,7 +119,7 @@ export default function ReportHistory() {
               }}
             >
               <div style={{ fontSize: '1.6rem', fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.count}</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', marginTop: 3 }}>{s.label}</div>
+              <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', marginTop: 3 }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -128,7 +128,7 @@ export default function ReportHistory() {
         <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
           {/* Search box */}
           <div style={{ flex: 1, minWidth: 180, position: 'relative' }}>
-            <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', pointerEvents: 'none' }} />
+            <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', pointerEvents: 'none' }} />
             <input
               className="input"
               style={{ paddingLeft: 36, paddingRight: search ? 36 : 14, height: 38, fontSize: '0.85rem' }}
@@ -137,7 +137,7 @@ export default function ReportHistory() {
               placeholder="Search by description, location, category…"
             />
             {search && (
-              <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', display: 'flex' }}>
+              <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', display: 'flex' }}>
                 <X size={14} />
               </button>
             )}
@@ -159,17 +159,17 @@ export default function ReportHistory() {
         {/* Status filter pills */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
           {([
-            { key: 'all', label: `All (${counts.all})`, color: 'var(--text-1)' },
-            { key: 'reported', label: `🔴 Active (${counts.reported})`, color: 'var(--red)' },
-            { key: 'responding', label: `🟡 Responding (${counts.responding})`, color: 'var(--yellow)' },
-            { key: 'resolved', label: `🟢 Resolved (${counts.resolved})`, color: 'var(--green)' },
+            { key: 'all', label: `All (${counts.all})`, color: '#64748B' },
+            { key: 'reported', label: `🔴 Active (${counts.reported})`, color: '#EF4444' },
+            { key: 'responding', label: `🟡 Responding (${counts.responding})`, color: '#D97706' },
+            { key: 'resolved', label: `🟢 Resolved (${counts.resolved})`, color: '#10B981' },
           ] as const).map(f => (
             <button key={f.key} onClick={() => setStatusFilter(f.key as any)}
               style={{
                 padding: '5px 14px', borderRadius: 'var(--r-full)',
-                border: `1px solid ${statusFilter === f.key ? f.color : 'var(--border)'}`,
+                border: `1px solid ${statusFilter === f.key ? f.color : '#E2E8F0'}`,
                 background: statusFilter === f.key ? `${f.color}18` : 'transparent',
-                color: statusFilter === f.key ? f.color : 'var(--text-2)',
+                color: statusFilter === f.key ? f.color : '#64748B',
                 fontFamily: 'inherit', fontWeight: 600, fontSize: '0.78rem', cursor: 'pointer',
                 transition: 'all 0.15s',
               }}>
@@ -182,12 +182,12 @@ export default function ReportHistory() {
         {loading ? (
           <LoadingSpinner text="Loading report history…" />
         ) : filtered.length === 0 ? (
-          <div className="card" style={{ textAlign: 'center', padding: '40px 20px' }}>
+          <div className="card" style={{ textAlign: 'center', padding: '40px 20px', background: '#F8FAFC', border: '1px dashed #CBD5E1' }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>
               {search ? '🔍' : '📋'}
             </div>
-            <h3>{search ? 'No results found' : 'No reports yet'}</h3>
-            <p style={{ marginTop: 6, fontSize: '0.85rem' }}>
+            <h3 style={{ color: '#0F172A', fontWeight: 700 }}>{search ? 'No results found' : 'No reports yet'}</h3>
+            <p style={{ marginTop: 6, fontSize: '0.85rem', color: '#64748B' }}>
               {search ? `Try a different search term` : 'Be the first to report a road incident'}
             </p>
           </div>
@@ -197,21 +197,22 @@ export default function ReportHistory() {
               const sev = SEVERITY_META[a.severity];
               const cat = CATEGORY_META[a.category];
               const respCount = Object.keys(a.responses || {}).length;
-              const statusColor = a.status === 'resolved' ? 'var(--green)' : a.status === 'responding' ? 'var(--yellow)' : 'var(--red)';
-              const statusBg = a.status === 'resolved' ? 'var(--green-soft)' : a.status === 'responding' ? 'rgba(234,179,8,0.12)' : 'var(--red-soft)';
+              const statusColor = a.status === 'resolved' ? '#10B981' : a.status === 'responding' ? '#D97706' : '#EF4444';
+              const statusBg = a.status === 'resolved' ? '#ECFDF5' : a.status === 'responding' ? '#FFFBEB' : '#FEF2F2';
 
               return (
                 <div
                   key={a.id}
-                  className="anomaly-item"
+                  className="card"
                   onClick={() => navigate(`/incident/${a.id}`)}
-                  style={{ position: 'relative' }}
+                  style={{ position: 'relative', cursor: 'pointer', padding: '12px 16px', overflow: 'hidden', border: '1px solid #E2E8F0', transition: 'all 0.15s' }}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'none'}
                 >
                   {/* Severity indicator bar */}
                   <div style={{
                     position: 'absolute', left: 0, top: 0, bottom: 0,
-                    width: 4, borderRadius: '10px 0 0 10px',
-                    background: sev.color,
+                    width: 4, background: sev.color,
                   }} />
                   <div style={{ paddingLeft: 8, display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                     <div style={{
@@ -224,8 +225,8 @@ export default function ReportHistory() {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-                        <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{cat.label}</span>
-                        <span className="sev-pill" style={{ background: sev.bg, color: sev.color }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0F172A' }}>{cat.label}</span>
+                        <span style={{ background: sev.bg, color: sev.color, padding: '2px 8px', borderRadius: 'var(--r-full)', fontSize: '0.7rem', fontWeight: 700 }}>
                           Sev. {a.severity} – {sev.label}
                         </span>
                         <span style={{
@@ -236,16 +237,16 @@ export default function ReportHistory() {
                           {a.status}
                         </span>
                       </div>
-                      <p className="truncate" style={{ fontSize: '0.82rem', marginBottom: 5 }}>{a.description}</p>
-                      <div style={{ display: 'flex', gap: 12, fontSize: '0.73rem', color: 'var(--text-3)', flexWrap: 'wrap' }}>
+                      <p className="truncate" style={{ fontSize: '0.82rem', marginBottom: 5, color: '#475569' }}>{a.description}</p>
+                      <div style={{ display: 'flex', gap: 12, fontSize: '0.73rem', color: '#64748B', flexWrap: 'wrap' }}>
                         <span>📍 {a.location.address || `${a.location.lat.toFixed(4)}, ${a.location.lng.toFixed(4)}`}</span>
                         <span>🕐 {timeAgo(a.createdAt)}</span>
                         <span>👤 {a.reporterName}</span>
-                        {respCount > 0 && <span style={{ color: 'var(--green)' }}>✅ {respCount} responder{respCount > 1 ? 's' : ''}</span>}
-                        {a.resolvedAt && <span style={{ color: 'var(--green)' }}>Resolved {timeAgo(a.resolvedAt)}</span>}
+                        {respCount > 0 && <span style={{ color: '#10B981', fontWeight: 600 }}>✅ {respCount} responder{respCount > 1 ? 's' : ''}</span>}
+                        {a.resolvedAt && <span style={{ color: '#10B981', fontWeight: 600 }}>Resolved {timeAgo(a.resolvedAt)}</span>}
                       </div>
                     </div>
-                    <ChevronRight size={16} color="var(--text-3)" style={{ flexShrink: 0, marginTop: 6 }} />
+                    <ChevronRight size={16} color="#94A3B8" style={{ flexShrink: 0, marginTop: 6 }} />
                   </div>
                 </div>
               );
@@ -255,7 +256,7 @@ export default function ReportHistory() {
 
         {/* Results count */}
         {!loading && anomalies.length > 0 && (
-          <div style={{ textAlign: 'center', marginTop: 16, fontSize: '0.78rem', color: 'var(--text-3)' }}>
+          <div style={{ textAlign: 'center', marginTop: 16, fontSize: '0.78rem', color: '#94A3B8' }}>
             Showing {filtered.length} of {anomalies.length} reports
           </div>
         )}

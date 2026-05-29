@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface GeoState {
   lat: number | null;
@@ -8,110 +8,102 @@ interface GeoState {
   heading: number | null;
   error: string | null;
   loading: boolean;
+  permission: PermissionState | 'unknown';
 }
 
-export function useGeolocation() {
+interface GeoHook extends GeoState {
+  refresh: () => Promise<{ lat: number; lng: number } | null>;
+}
+
+export function useGeolocation(): GeoHook {
   const [state, setState] = useState<GeoState>({
     lat: null, lng: null, accuracy: null,
     speed: null, heading: null, error: null, loading: true,
+    permission: 'unknown'
   });
   const watchId = useRef<number | null>(null);
-  const isPreciseRef = useRef<boolean>(false);
 
+  // Monitor Permissions API for mid-session changes (e.g. user clicks lock icon and denies)
   useEffect(() => {
-    let timeoutId: number | null = null;
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'geolocation' }).then(result => {
+        setState(s => ({ ...s, permission: result.state }));
+        result.onchange = () => {
+          setState(s => ({ ...s, permission: result.state }));
+        };
+      }).catch(err => console.warn('Permissions API not supported', err));
+    }
+  }, []);
 
-    const fetchIpLocation = async () => {
-      if (isPreciseRef.current) return;
-      try {
-        const res = await fetch('https://freeipapi.com/api/json');
-        if (res.ok) {
-          const data = await res.json();
-          if (data.latitude && data.longitude && !isPreciseRef.current) {
-            setState({
-              lat: Number(data.latitude),
-              lng: Number(data.longitude),
-              accuracy: 15000,
-              speed: null,
-              heading: null,
-              error: 'Rough location from IP address.',
-              loading: false,
-            });
-            return true;
-          }
-        }
-      } catch (e) {
-        try {
-          const res2 = await fetch('https://ipapi.co/json/');
-          if (res2.ok) {
-            const data2 = await res2.json();
-            if (data2.latitude && data2.longitude && !isPreciseRef.current) {
-              setState({
-                lat: data2.latitude,
-                lng: data2.longitude,
-                accuracy: 15000,
-                speed: null,
-                heading: null,
-                error: 'Rough location from IP address.',
-                loading: false,
-              });
-              return true;
-            }
-          }
-        } catch (e2) {
-          console.warn('IP geolocation failed:', e2);
-        }
-      }
-      return false;
-    };
+  const handleSuccess = useCallback((pos: GeolocationPosition) => {
+    setState(s => ({
+      ...s,
+      lat: pos.coords.latitude,
+      lng: pos.coords.longitude,
+      accuracy: pos.coords.accuracy,
+      speed: pos.coords.speed,
+      heading: pos.coords.heading,
+      error: null,
+      loading: false,
+    }));
+  }, []);
 
+  const handleError = useCallback((err: GeolocationPositionError) => {
+    console.warn('GPS location failed:', err.message);
+    let errMsg = 'Location access failed.';
+    switch (err.code) {
+      case err.PERMISSION_DENIED:
+        errMsg = 'Location permission denied. Please enable it in browser settings.';
+        break;
+      case err.POSITION_UNAVAILABLE:
+        errMsg = 'Location information is unavailable.';
+        break;
+      case err.TIMEOUT:
+        errMsg = 'The request to get user location timed out.';
+        break;
+    }
+    setState(s => ({ ...s, error: errMsg, loading: false }));
+  }, []);
+
+  // Background passive watch (handles user physically walking around)
+  useEffect(() => {
     if (!navigator.geolocation) {
-      fetchIpLocation().then(success => {
-        if (!success) {
-          setState(s => ({ ...s, error: 'Geolocation not supported', loading: false }));
-        }
-      });
+      setState(s => ({ ...s, error: 'Geolocation is not supported by your browser.', loading: false }));
       return;
     }
 
-    const opts: PositionOptions = { enableHighAccuracy: true, maximumAge: 10000, timeout: 6000 };
+    // maximumAge: 10000 (allow up to 10s old cache) to prevent strict timeouts
+    const opts: PositionOptions = { enableHighAccuracy: true, maximumAge: 10000, timeout: 30000 };
+    watchId.current = navigator.geolocation.watchPosition(handleSuccess, handleError, opts);
 
-    const success = (pos: GeolocationPosition) => {
-      isPreciseRef.current = true;
-      if (timeoutId) window.clearTimeout(timeoutId);
-      setState({
-        lat: pos.coords.latitude,
-        lng: pos.coords.longitude,
-        accuracy: pos.coords.accuracy,
-        speed: pos.coords.speed,
-        heading: pos.coords.heading,
-        error: null,
-        loading: false,
-      });
-    };
-
-    const fail = async (err: GeolocationPositionError) => {
-      console.warn('GPS location failed:', err.message);
-      if (isPreciseRef.current) return;
-      const ok = await fetchIpLocation();
-      if (!ok) {
-        setState(s => ({ ...s, error: err.message, loading: false }));
-      }
-    };
-
-    // Set a 3.5s timeout to trigger IP fallback if GPS is taking too long
-    timeoutId = window.setTimeout(() => {
-      if (!isPreciseRef.current) {
-        fetchIpLocation();
-      }
-    }, 3500);
-
-    watchId.current = navigator.geolocation.watchPosition(success, fail, opts);
     return () => {
-      if (timeoutId) window.clearTimeout(timeoutId);
       if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
     };
-  }, []);
+  }, [handleSuccess, handleError]);
 
-  return state;
+  // Active Hardware Refresh (bypasses OS stale caches by forcing a fresh getCurrentPosition)
+  const refresh = useCallback((): Promise<{ lat: number; lng: number } | null> => {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        setState(s => ({ ...s, error: 'Geolocation is not supported.', loading: false }));
+        resolve(null);
+        return;
+      }
+
+      setState(s => ({ ...s, loading: true }));
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          handleSuccess(pos);
+          resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        },
+        (err) => {
+          handleError(err);
+          resolve(null);
+        },
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 }
+      );
+    });
+  }, [handleSuccess, handleError]);
+
+  return { ...state, refresh };
 }

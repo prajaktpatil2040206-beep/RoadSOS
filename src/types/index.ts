@@ -124,10 +124,12 @@ export interface NearbyPlace {
   category: PlaceCategory;
   address?: string;
   rating?: number;
+  ratingCount?: number;
   distance?: number;
   phone?: string;
   isOpen?: boolean;
   photoUrl?: string;
+  businessStatus?: string;
 }
 
 // ─── Journey ──────────────────────────────────────────────────────────────────

@@ -1,19 +1,19 @@
 import { NavLink } from 'react-router-dom';
 import {
   Home, MapPin, Navigation, Route, AlertTriangle,
-  LayoutDashboard, User, History
+  LayoutDashboard, User, History, Zap, ChevronRight
 } from 'lucide-react';
 import { useUserStore } from '../../store/userStore';
 
 const NAV = [
-  { to: '/',               icon: Home,            label: 'Home' },
-  { to: '/nearme',         icon: MapPin,           label: 'Near Me' },
-  { to: '/navigation',     icon: Navigation,       label: 'Navigate' },
-  { to: '/journey',        icon: Route,            label: 'Journey' },
-  { to: '/report',         icon: AlertTriangle,    label: 'Report SOS' },
-  { to: '/dashboard',      icon: LayoutDashboard,  label: 'Incidents' },
-  { to: '/report-history', icon: History,          label: 'History' },
-  { to: '/profile',        icon: User,             label: 'Profile' },
+  { to: '/',               icon: Home,           label: 'Home',      end: true },
+  { to: '/nearme',         icon: MapPin,         label: 'Near Me',   end: false },
+  { to: '/navigation',     icon: Navigation,     label: 'Navigate',  end: false },
+  { to: '/journey',        icon: Route,          label: 'Journey',   end: false },
+  { to: '/report',         icon: AlertTriangle,  label: 'Report SOS',end: false },
+  { to: '/dashboard',      icon: LayoutDashboard,label: 'Incidents', end: false },
+  { to: '/report-history', icon: History,        label: 'History',   end: false },
+  { to: '/profile',        icon: User,           label: 'Profile',   end: false },
 ];
 
 export default function Sidebar() {
@@ -21,65 +21,81 @@ export default function Sidebar() {
 
   return (
     <aside className="sidebar">
-      {/* Logo */}
+      {/* Brand */}
       <div style={{
-        padding: 'var(--sp-5) var(--sp-4)',
-        borderBottom: '1px solid var(--border)',
-        display: 'flex', alignItems: 'center', gap: 'var(--sp-2)'
+        padding: '1.25rem 1rem',
+        borderBottom: '1px solid #E2E8F0',
+        display: 'flex', alignItems: 'center', gap: '0.625rem',
       }}>
-        <span style={{ fontSize: '1.6rem' }}>🚨</span>
+        <div style={{
+          width: 34, height: 34, borderRadius: 9,
+          background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        }}>
+          <Zap size={18} color="#fff" fill="#fff" />
+        </div>
         <div>
-          <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--primary)' }}>ROADSOS</div>
-          <div style={{ fontSize: '0.68rem', color: 'var(--text-3)', fontWeight: 500 }}>Emergency Platform</div>
+          <div style={{ fontWeight: 800, fontSize: '0.95rem', letterSpacing: '-0.02em', color: '#0F172A', lineHeight: 1.2 }}>
+            ROAD<span style={{ background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SOS</span>
+          </div>
+          <div style={{ fontSize: '0.65rem', color: '#94A3B8', fontWeight: 500, letterSpacing: '0.04em' }}>Emergency Platform</div>
         </div>
       </div>
 
-      {/* User info */}
+      {/* User card */}
       {user && (
         <div style={{
-          padding: 'var(--sp-4)',
-          borderBottom: '1px solid var(--border)',
-          display: 'flex', alignItems: 'center', gap: 'var(--sp-3)',
+          margin: '0.75rem',
+          padding: '0.75rem',
+          background: 'linear-gradient(135deg, #EEF2FF 0%, #F5F3FF 100%)',
+          border: '1px solid #C7D2FE',
+          borderRadius: 10,
+          display: 'flex', alignItems: 'center', gap: '0.625rem',
         }}>
           {user.photoBase64 ? (
             <img src={user.photoBase64} alt="avatar"
-              style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--primary)', flexShrink: 0 }} />
+              style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #4F46E5' }} />
           ) : (
             <div style={{
               width: 36, height: 36, borderRadius: '50%',
-              background: 'var(--primary-soft)', border: '2px solid var(--primary)',
+              background: 'linear-gradient(135deg, #4F46E5, #7C3AED)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontWeight: 700, color: 'var(--primary)', fontSize: '0.9rem', flexShrink: 0,
+              color: '#fff', fontWeight: 700, fontSize: '0.9rem', flexShrink: 0,
             }}>
               {user.name?.charAt(0)?.toUpperCase() || 'U'}
             </div>
           )}
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-1)' }} className="truncate">{user.name}</div>
-            <div style={{ fontSize: '0.68rem', color: 'var(--text-3)', fontFamily: 'monospace' }}>{user.sosId || ''}</div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#1E1B4B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</div>
+            <div style={{ fontSize: '0.65rem', color: '#6366F1', fontFamily: 'monospace', fontWeight: 500 }}>{user.sosId || 'No SOS ID'}</div>
           </div>
+          <ChevronRight size={14} color="#6366F1" />
         </div>
       )}
 
-      {/* Nav items */}
+      {/* Navigation */}
       <nav className="nav-section" style={{ flex: 1 }}>
         <div className="nav-label">Navigation</div>
-        {NAV.map(({ to, icon: Icon, label }) => (
+        {NAV.map(({ to, icon: Icon, label, end }) => (
           <NavLink
             key={to}
             to={to}
-            end={to === '/'}
+            end={end}
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
           >
-            <Icon size={17} />
+            <Icon size={16} />
             <span style={{ flex: 1 }}>{label}</span>
           </NavLink>
         ))}
       </nav>
 
-      {/* Version */}
-      <div style={{ padding: 'var(--sp-4)', borderTop: '1px solid var(--border)' }}>
-        <div style={{ fontSize: '0.68rem', color: 'var(--text-3)', textAlign: 'center' }}>
+      {/* Footer */}
+      <div style={{
+        padding: '0.875rem 1rem',
+        borderTop: '1px solid #E2E8F0',
+        textAlign: 'center',
+      }}>
+        <div style={{ fontSize: '0.65rem', color: '#94A3B8', fontWeight: 500 }}>
           ROADSOS v1.0 · Global Emergency Platform
         </div>
       </div>

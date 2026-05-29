@@ -9,18 +9,28 @@ import { useGoogleMapsLoader } from '../../hooks/useGoogleMapsLoader';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import toast from 'react-hot-toast';
 
-const MAP_STYLES = [
-  { elementType: 'geometry', stylers: [{ color: '#1d2033' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#8c9aad' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2d3350' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0d1117' }] },
-];
+const LIGHT_MAP_OPTIONS = {
+  mapTypeId: 'roadmap',
+  disableDefaultUI: false,
+  zoomControl: true,
+  streetViewControl: true,
+  mapTypeControl: true,
+  fullscreenControl: false,
+  styles: [
+    { elementType: 'geometry', stylers: [{ color: '#f8fafc' }] },
+    { elementType: 'labels.text.fill', stylers: [{ color: '#64748b' }] },
+    { elementType: 'labels.text.stroke', stylers: [{ color: '#ffffff' }] },
+    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#e2e8f0' }] },
+    { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#cbd5e1' }] },
+    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#e0f2fe' }] },
+  ]
+};
 
 export default function ResponderDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const { isLoaded } = useGoogleMapsLoader();
+  const { isLoaded, loadError } = useGoogleMapsLoader();
 
   const responderRaw = localStorage.getItem('roadsos-responder');
   const responder = responderRaw ? JSON.parse(responderRaw) : null;
@@ -44,10 +54,8 @@ export default function ResponderDetail() {
     return unsub;
   }, [id]);
 
-  // Get directions when anomaly loads
   useEffect(() => {
     if (!anomaly || !isLoaded) return;
-    // Try get responder's geolocation
     navigator.geolocation.getCurrentPosition(pos => {
       const ds = new google.maps.DirectionsService();
       ds.route({
@@ -104,9 +112,9 @@ export default function ResponderDetail() {
 
   if (loading) return <LoadingSpinner size={40} text="Loading incident…" />;
   if (!anomaly) return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-base)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
+    <div style={{ minHeight: '100vh', background: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
       <div style={{ fontSize: 48 }}>🔍</div>
-      <h2>Incident Not Found</h2>
+      <h2 style={{ color: '#0F172A', fontWeight: 800 }}>Incident Not Found</h2>
       <button className="btn btn-secondary" onClick={() => navigate('/responder/dashboard')}>Back to Dashboard</button>
     </div>
   );
@@ -117,94 +125,96 @@ export default function ResponderDetail() {
   const otherResponders = responses.filter(r => r.uid !== responder?.uid);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-base)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: '#F8FAFC', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
-      <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border)', padding: '0 20px', height: 58, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button className="btn btn-ghost btn-icon btn-sm" onClick={() => navigate('/responder/dashboard')}><ArrowLeft size={18} /></button>
+      <div style={{ background: '#fff', borderBottom: '1px solid #E2E8F0', padding: '0 20px', height: 64, display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 1px 3px rgba(15,23,42,0.05)' }}>
+        <button className="btn btn-ghost btn-icon btn-sm" onClick={() => navigate('/responder/dashboard')} style={{ color: '#64748B' }}><ArrowLeft size={20} /></button>
         <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: '1.2rem' }}>{cat.icon}</span>
-            <span style={{ fontWeight: 700 }}>{cat.label}</span>
-            <span className="sev-pill" style={{ background: sev.bg, color: sev.color }}>Severity {anomaly.severity}</span>
-            <span className="badge" style={{
-              background: anomaly.status === 'resolved' ? 'var(--green-soft)' : anomaly.status === 'responding' ? 'rgba(234,179,8,0.15)' : 'var(--red-soft)',
-              color: anomaly.status === 'resolved' ? 'var(--green)' : anomaly.status === 'responding' ? 'var(--yellow)' : 'var(--red)',
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: '1.4rem' }}>{cat.icon}</span>
+            <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#0F172A' }}>{cat.label}</span>
+            <span style={{ background: sev.bg, color: sev.color, padding: '2px 10px', borderRadius: 'var(--r-full)', fontSize: '0.75rem', fontWeight: 700 }}>Severity {anomaly.severity}</span>
+            <span style={{
+              background: anomaly.status === 'resolved' ? '#ECFDF5' : anomaly.status === 'responding' ? '#FFFBEB' : '#FEF2F2',
+              color: anomaly.status === 'resolved' ? '#10B981' : anomaly.status === 'responding' ? '#D97706' : '#EF4444',
+              padding: '2px 10px', borderRadius: 'var(--r-full)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em'
             }}>{anomaly.status}</span>
           </div>
         </div>
-        <button className="btn btn-primary btn-sm" onClick={openGoogleMaps}>
+        <button className="btn btn-primary btn-sm" onClick={openGoogleMaps} style={{ boxShadow: '0 4px 10px rgba(79, 70, 229, 0.3)' }}>
           <Navigation size={14} /> Navigate There
         </button>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', overflow: 'auto' }}>
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {/* Left panel */}
-        <div style={{ flex: 1, padding: '20px', overflowY: 'auto', maxWidth: 520 }}>
+        <div style={{ flex: 1, padding: '24px', overflowY: 'auto', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 20 }}>
           {/* Incident info */}
-          <div className="card" style={{ marginBottom: 16 }}>
-            <h3 style={{ marginBottom: 12 }}>Incident Details</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <MapPin size={14} color="var(--primary)" style={{ flexShrink: 0, marginTop: 2 }} />
+          <div className="card">
+            <h3 style={{ marginBottom: 16, fontSize: '1.1rem', fontWeight: 800, color: '#0F172A', borderBottom: '1px solid #E2E8F0', paddingBottom: 8 }}>Incident Details</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <MapPin size={16} color="#4F46E5" style={{ flexShrink: 0, marginTop: 2 }} />
                 <div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase' }}>Location</div>
-                  <div style={{ fontSize: '0.88rem' }}>{anomaly.location.address || `${anomaly.location.lat.toFixed(5)}, ${anomaly.location.lng.toFixed(5)}`}</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700, textTransform: 'uppercase' }}>Location</div>
+                  <div style={{ fontSize: '0.95rem', color: '#0F172A', fontWeight: 500, marginTop: 2 }}>{anomaly.location.address || `${anomaly.location.lat.toFixed(5)}, ${anomaly.location.lng.toFixed(5)}`}</div>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <Clock size={14} color="var(--blue)" style={{ flexShrink: 0, marginTop: 2 }} />
+              <div style={{ display: 'flex', gap: 10 }}>
+                <Clock size={16} color="#D97706" style={{ flexShrink: 0, marginTop: 2 }} />
                 <div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase' }}>Reported</div>
-                  <div style={{ fontSize: '0.88rem' }}>{timeAgo(anomaly.createdAt)} by {anomaly.reporterName}</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700, textTransform: 'uppercase' }}>Reported</div>
+                  <div style={{ fontSize: '0.95rem', color: '#0F172A', fontWeight: 500, marginTop: 2 }}>{timeAgo(anomaly.createdAt)} by <span style={{ fontWeight: 700 }}>{anomaly.reporterName}</span></div>
                 </div>
               </div>
-              <div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', marginBottom: 4 }}>Description</div>
-                <p style={{ fontSize: '0.9rem', lineHeight: 1.6, color: 'var(--text-1)' }}>{anomaly.description}</p>
+              <div style={{ background: '#F8FAFC', padding: 12, borderRadius: 8, border: '1px solid #E2E8F0' }}>
+                <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700, textTransform: 'uppercase', marginBottom: 6 }}>Description</div>
+                <p style={{ fontSize: '0.95rem', lineHeight: 1.6, color: '#0F172A' }}>{anomaly.description}</p>
               </div>
-              <div style={{ padding: '10px 14px', background: sev.bg, borderRadius: 'var(--r-md)', border: `1px solid ${sev.color}44` }}>
-                <div style={{ color: sev.color, fontWeight: 700, fontSize: '0.85rem' }}>{sev.label} Severity</div>
-                <div style={{ color: 'var(--text-2)', fontSize: '0.78rem', marginTop: 2 }}>{sev.description}</div>
+              <div style={{ padding: '12px 16px', background: sev.bg, borderRadius: 'var(--r-md)', border: `1px solid ${sev.color}44` }}>
+                <div style={{ color: sev.color, fontWeight: 800, fontSize: '0.9rem' }}>{sev.label} Severity</div>
+                <div style={{ color: '#475569', fontSize: '0.85rem', marginTop: 4, fontWeight: 500 }}>{sev.description}</div>
               </div>
             </div>
           </div>
 
           {/* My Response */}
           {anomaly.status !== 'resolved' && (
-            <div className="card" style={{ marginBottom: 16 }}>
-              <h3 style={{ marginBottom: 12 }}>My Response</h3>
+            <div className="card" style={{ border: '2px solid #4F46E5' }}>
+              <h3 style={{ marginBottom: 16, fontSize: '1.1rem', fontWeight: 800, color: '#4F46E5' }}>My Response</h3>
               {!myStatus ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   <div className="form-group">
                     <label className="label">Estimated Time of Arrival (minutes)</label>
                     <input className="input" type="number" value={eta} onChange={e => setEta(e.target.value)} min="1" max="120" />
                   </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={handleOffer} disabled={acting}>
-                      {acting ? <><div className="spinner" style={{ width: 14, height: 14 }} /> Offering…</> : <><Truck size={16} /> Offer Help</>}
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <button className="btn btn-primary btn-lg" style={{ flex: 1, justifyContent: 'center', boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)' }} onClick={handleOffer} disabled={acting}>
+                      {acting ? <><div className="spinner" style={{ borderWidth: 2 }} /> Offering…</> : <><Truck size={18} /> Offer Help</>}
                     </button>
-                    <button className="btn btn-secondary" onClick={() => handleStatusUpdate('declined')} disabled={acting} style={{ color: 'var(--red)' }}>
-                      <XCircle size={16} /> Decline
+                    <button className="btn btn-secondary btn-lg" onClick={() => handleStatusUpdate('declined')} disabled={acting} style={{ color: '#EF4444' }}>
+                      <XCircle size={18} /> Decline
                     </button>
                   </div>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'var(--bg-card2)', borderRadius: 'var(--r-md)' }}>
-                    <span style={{ fontWeight: 600 }}>Current Status:</span>
-                    <span className="badge badge-blue">{myStatus.replace('_', ' ')}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', background: '#EEF2FF', borderRadius: 'var(--r-md)', border: '1px solid #C7D2FE' }}>
+                    <span style={{ fontWeight: 700, color: '#4F46E5' }}>Current Status:</span>
+                    <span className="badge badge-blue" style={{ fontSize: '0.85rem' }}>{myStatus.replace('_', ' ')}</span>
                   </div>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     {(['en_route', 'arrived'] as AnomalyResponse['status'][]).map(s => (
-                      <button key={s} className={`btn btn-sm ${myStatus === s ? 'btn-primary' : 'btn-secondary'}`}
-                        onClick={() => handleStatusUpdate(s)} disabled={acting || myStatus === s}>
+                      <button key={s} className={`btn btn-lg ${myStatus === s ? 'btn-primary' : 'btn-secondary'}`}
+                        onClick={() => handleStatusUpdate(s)} disabled={acting || myStatus === s}
+                        style={myStatus === s ? { boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)' } : {}}>
                         {s === 'en_route' ? '🚗 En Route' : '✅ Arrived'}
                       </button>
                     ))}
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginLeft: 'auto' }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginLeft: 'auto', background: '#F8FAFC', padding: 4, borderRadius: 8, border: '1px solid #E2E8F0' }}>
                       <input className="input" type="number" value={eta} onChange={e => setEta(e.target.value)}
-                        style={{ width: 70, height: 32, fontSize: '0.8rem' }} placeholder="ETA min" />
-                      <button className="btn btn-secondary btn-sm" onClick={() => handleStatusUpdate(myStatus)} disabled={acting}>Update ETA</button>
+                        style={{ width: 80, height: 38, fontSize: '0.9rem', textAlign: 'center' }} placeholder="ETA min" />
+                      <button className="btn btn-secondary" onClick={() => handleStatusUpdate(myStatus)} disabled={acting}>Update ETA</button>
                     </div>
                   </div>
                 </div>
@@ -215,24 +225,25 @@ export default function ResponderDetail() {
           {/* Other responders */}
           {responses.length > 0 && (
             <div className="card">
-              <h3 style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Users size={16} color="var(--blue)" /> All Responders ({responses.length})
+              <h3 style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, fontSize: '1rem', fontWeight: 700, color: '#0F172A', borderBottom: '1px solid #E2E8F0', paddingBottom: 8 }}>
+                <Users size={18} color="#4F46E5" /> All Responders ({responses.length})
               </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {responses.map(r => (
-                  <div key={r.uid} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--bg-base)', borderRadius: 'var(--r-md)' }}>
-                    <span style={{ fontSize: '1.2rem' }}>
+                  <div key={r.uid} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: '#F8FAFC', borderRadius: 'var(--r-md)', border: '1px solid #E2E8F0' }}>
+                    <span style={{ fontSize: '1.4rem' }}>
                       {r.responderType === 'hospital' ? '🏥' : r.responderType === 'police' ? '🚔' : r.responderType === 'fire' ? '🚒' : '🚛'}
                     </span>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{r.responderName}</div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-3)' }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0F172A' }}>{r.responderName}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, marginTop: 2 }}>
                         {r.responderType} {r.eta ? `• ETA: ${r.eta}min` : ''} • {timeAgo(r.updatedAt)}
                       </div>
                     </div>
                     <span className="badge" style={{
-                      background: r.status === 'arrived' ? 'var(--green-soft)' : r.status === 'en_route' ? 'var(--orange-soft)' : 'var(--blue-soft)',
-                      color: r.status === 'arrived' ? 'var(--green)' : r.status === 'en_route' ? 'var(--orange)' : 'var(--blue)',
+                      background: r.status === 'arrived' ? '#ECFDF5' : r.status === 'en_route' ? '#FFFBEB' : '#EEF2FF',
+                      color: r.status === 'arrived' ? '#10B981' : r.status === 'en_route' ? '#D97706' : '#4F46E5',
+                      fontWeight: 700, textTransform: 'capitalize'
                     }}>
                       {r.status.replace('_', ' ')}
                     </span>
@@ -245,12 +256,26 @@ export default function ResponderDetail() {
 
         {/* Map panel */}
         <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
-          {!isLoaded ? <LoadingSpinner text="Loading map…" /> : (
+          {loadError ? (
+            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FEF2F2', color: '#EF4444', fontWeight: 600 }}>
+              Failed to load map.
+            </div>
+          ) : !isLoaded ? (
+            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
+              <LoadingSpinner text="Loading map…" />
+            </div>
+          ) : (
             <GoogleMap
               mapContainerStyle={{ width: '100%', height: '100%' }}
               center={{ lat: anomaly.location.lat, lng: anomaly.location.lng }}
               zoom={14}
-              options={{ styles: MAP_STYLES, disableDefaultUI: false, zoomControl: true }}
+              options={{
+                styles: LIGHT_MAP_OPTIONS,
+                disableDefaultUI: false,
+                zoomControl: true,
+                streetViewControl: true,
+                mapTypeControl: true
+              }}
             >
               <MarkerF
                 position={{ lat: anomaly.location.lat, lng: anomaly.location.lng }}
@@ -258,7 +283,7 @@ export default function ResponderDetail() {
               />
               {directions && (
                 <DirectionsRenderer directions={directions} options={{
-                  polylineOptions: { strokeColor: '#3b82f6', strokeWeight: 5 },
+                  polylineOptions: { strokeColor: '#4F46E5', strokeWeight: 6, strokeOpacity: 0.9 },
                 }} />
               )}
             </GoogleMap>

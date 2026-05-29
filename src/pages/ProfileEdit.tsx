@@ -119,27 +119,28 @@ export default function ProfileEdit() {
   ] as const;
 
   return (
-    <div className="page">
-      <div style={{ maxWidth: 680, margin: '0 auto' }}>
+    <div className="page" style={{ overflowY: 'auto' }}>
+      <div style={{ maxWidth: 680, margin: '0 auto', paddingBottom: '2rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
           <button className="btn btn-ghost btn-icon btn-sm" onClick={() => navigate('/profile')}>
             <ArrowLeft size={18} />
           </button>
-          <h1>Edit Profile</h1>
+          <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0F172A' }}>Edit Profile</h1>
           <button className="btn btn-primary btn-sm" style={{ marginLeft: 'auto' }} onClick={handleSave} disabled={saving}>
-            {saving ? <><div className="spinner" style={{ width: 14, height: 14 }} /> Saving…</> : <><Save size={14} /> Save</>}
+            {saving ? <><div className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> Saving…</> : <><Save size={14} /> Save</>}
           </button>
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: 'var(--bg-card)', borderRadius: 'var(--r-md)', padding: 4 }}>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: '#fff', borderRadius: 'var(--r-md)', padding: 4, border: '1px solid #E2E8F0', overflowX: 'auto' }}>
           {TABS.map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
               style={{
-                flex: 1, padding: '8px 4px', border: 'none', borderRadius: 'var(--r-sm)',
+                flex: 1, padding: '8px 12px', border: 'none', borderRadius: 'var(--r-sm)',
                 background: tab === t.key ? 'var(--primary)' : 'transparent',
-                color: tab === t.key ? '#fff' : 'var(--text-2)',
+                color: tab === t.key ? '#fff' : '#64748B',
                 fontFamily: 'inherit', fontWeight: 600, fontSize: '0.78rem', cursor: 'pointer',
+                whiteSpace: 'nowrap', transition: 'all 0.15s'
               }}>
               {t.label}
             </button>
@@ -148,8 +149,8 @@ export default function ProfileEdit() {
 
         {/* Personal */}
         {tab === 'personal' && (
-          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <h3>Personal Information</h3>
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.5rem' }}>Personal Information</h3>
             <div className="grid-2">
               <div className="form-group">
                 <label className="label">Full Name *</label>
@@ -205,9 +206,9 @@ export default function ProfileEdit() {
 
         {/* Medical */}
         {tab === 'medical' && (
-          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <h3>🩺 Medical Information</h3>
-            <p style={{ fontSize: '0.82rem' }}>This info is shown on your emergency ID card and helps responders.</p>
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.5rem' }}>Medical Information</h3>
+            <p style={{ fontSize: '0.82rem', color: '#64748B' }}>This info is shown on your emergency ID card and helps responders.</p>
             <div className="form-group">
               <label className="label">Allergies</label>
               <input className="input" value={form.allergies} onChange={e => setF('allergies', e.target.value)} placeholder="e.g., Penicillin, Peanuts" />
@@ -220,11 +221,11 @@ export default function ProfileEdit() {
               <label className="label">Current Medications</label>
               <textarea className="input" value={form.medications} onChange={e => setF('medications', e.target.value)} placeholder="e.g., Metformin 500mg" rows={3} />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#F8FAFC', padding: '1rem', borderRadius: 8, border: '1px solid #E2E8F0' }}>
               <input type="checkbox" id="donor" checked={form.organDonor}
                 onChange={e => setF('organDonor', e.target.checked)}
                 style={{ width: 18, height: 18, accentColor: 'var(--primary)', cursor: 'pointer' }} />
-              <label htmlFor="donor" style={{ cursor: 'pointer', fontSize: '0.9rem' }}>I am an Organ Donor 💚</label>
+              <label htmlFor="donor" style={{ cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, color: '#0F172A' }}>I am an Organ Donor 💚</label>
             </div>
           </div>
         )}
@@ -234,13 +235,13 @@ export default function ProfileEdit() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {vehicles.map(v => (
               <div key={v.id} className="card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <h4>Vehicle</h4>
-                  <button className="btn btn-ghost btn-icon btn-sm" onClick={() => removeVehicle(v.id)} style={{ color: 'var(--red)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, borderBottom: '1px solid #E2E8F0', paddingBottom: '0.5rem' }}>
+                  <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0F172A' }}>Vehicle Details</h4>
+                  <button className="btn btn-ghost btn-icon btn-sm" onClick={() => removeVehicle(v.id)} style={{ color: '#EF4444' }}>
                     <Trash2 size={14} />
                   </button>
                 </div>
-                <div className="grid-2" style={{ gap: 10 }}>
+                <div className="grid-2" style={{ gap: 12 }}>
                   {[
                     { key: 'type', label: 'Type', opts: ['Car','Bike','Truck','Bus','Auto'] },
                   ].map(({ key, opts }) => (
@@ -260,7 +261,7 @@ export default function ProfileEdit() {
                 </div>
               </div>
             ))}
-            <button className="btn btn-secondary" onClick={addVehicle} style={{ justifyContent: 'center' }}>
+            <button className="btn btn-secondary" onClick={addVehicle} style={{ justifyContent: 'center', marginTop: 8 }}>
               <Plus size={16} /> Add Vehicle
             </button>
           </div>
@@ -269,13 +270,13 @@ export default function ProfileEdit() {
         {/* Photo */}
         {tab === 'photo' && (
           <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center' }}>
-            <h3>Profile Photo</h3>
-            <p style={{ fontSize: '0.82rem', textAlign: 'center' }}>Photo is stored securely (base64) in the database. Recommended: clear face photo under 5MB.</p>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A', alignSelf: 'stretch', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.5rem', marginBottom: 0 }}>Profile Photo</h3>
+            <p style={{ fontSize: '0.82rem', textAlign: 'center', color: '#64748B' }}>Photo is stored securely (base64) in the database. Recommended: clear face photo under 5MB.</p>
             {photoBase64 ? (
-              <img src={photoBase64} alt="Preview" style={{ width: 130, height: 130, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--primary)' }} />
+              <img src={photoBase64} alt="Preview" style={{ width: 130, height: 130, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--primary)', boxShadow: '0 4px 14px rgba(79, 70, 229, 0.2)' }} />
             ) : (
-              <div style={{ width: 130, height: 130, borderRadius: '50%', background: 'var(--bg-card2)', border: '3px dashed var(--border2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Camera size={32} color="var(--text-3)" />
+              <div style={{ width: 130, height: 130, borderRadius: '50%', background: '#F8FAFC', border: '2px dashed #CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Camera size={32} color="#94A3B8" />
               </div>
             )}
             <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} />
@@ -284,12 +285,12 @@ export default function ProfileEdit() {
                 <Camera size={14} /> {photoBase64 ? 'Change Photo' : 'Upload Photo'}
               </button>
               {photoBase64 && (
-                <button className="btn btn-ghost btn-sm" style={{ color: 'var(--red)' }} onClick={() => { setPhotoBase64(''); toast.success('Photo removed'); }}>
+                <button className="btn btn-ghost btn-sm" style={{ color: '#EF4444' }} onClick={() => { setPhotoBase64(''); toast.success('Photo removed'); }}>
                   Remove
                 </button>
               )}
             </div>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', textAlign: 'center' }}>Photo is compressed to 300×300px before saving to minimize storage usage.</p>
+            <p style={{ fontSize: '0.75rem', color: '#94A3B8', textAlign: 'center' }}>Photo is compressed to 300×300px before saving to minimize storage usage.</p>
           </div>
         )}
 
@@ -298,13 +299,13 @@ export default function ProfileEdit() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {contacts.map(c => (
               <div key={c.id} className="card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <h4>Emergency Contact</h4>
-                  <button className="btn btn-ghost btn-icon btn-sm" onClick={() => removeContact(c.id)} style={{ color: 'var(--red)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, borderBottom: '1px solid #E2E8F0', paddingBottom: '0.5rem' }}>
+                  <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0F172A' }}>Emergency Contact</h4>
+                  <button className="btn btn-ghost btn-icon btn-sm" onClick={() => removeContact(c.id)} style={{ color: '#EF4444' }}>
                     <Trash2 size={14} />
                   </button>
                 </div>
-                <div className="grid-2" style={{ gap: 10 }}>
+                <div className="grid-2" style={{ gap: 12 }}>
                   <div className="form-group">
                     <label className="label">Full Name</label>
                     <input className="input" value={c.name} onChange={e => updateContact(c.id, 'name', e.target.value)} placeholder="Contact name" />
@@ -323,14 +324,14 @@ export default function ProfileEdit() {
                 </div>
               </div>
             ))}
-            <button className="btn btn-secondary" onClick={addContact} style={{ justifyContent: 'center' }}>
+            <button className="btn btn-secondary" onClick={addContact} style={{ justifyContent: 'center', marginTop: 8 }}>
               <Plus size={16} /> Add Contact
             </button>
           </div>
         )}
 
         <button className="btn btn-primary btn-lg" style={{ width: '100%', justifyContent: 'center', marginTop: 24 }} onClick={handleSave} disabled={saving}>
-          {saving ? <><div className="spinner" /> Saving…</> : <><Save size={18} /> Save Profile</>}
+          {saving ? <><div className="spinner" style={{ borderWidth: 2 }} /> Saving…</> : <><Save size={18} /> Save Profile</>}
         </button>
       </div>
     </div>
