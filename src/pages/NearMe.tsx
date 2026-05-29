@@ -23,6 +23,42 @@ function formatDist(m: number) {
   return m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${m} m`;
 }
 
+function generateMockPlaces(lat: number, lng: number, cat: PlaceCategory): NearbyPlace[] {
+  const mockNames: Record<PlaceCategory, string[]> = {
+    hospital: ['City Care Hospital', 'Metro Emergency Clinic', 'St. Jude General Hospital', 'Apex Trauma Center', 'Red Cross Wellness Clinic'],
+    police: ['Central Police Division', 'District Precinct 4', 'Municipal Police HQ', 'Highway Patrol Station', 'Community Police Outpost'],
+    petrol: ['FuelStop Gas Station', 'Shell Express', 'Apex Petroleum', 'EcoFuel Station', 'PowerGas Station'],
+    puncture: ['Quick Tyre Puncture Shop', 'Roadside Tyre Fix', 'Express Puncture Repair', 'Master Mechanics Puncture', 'AutoTyre Care'],
+    towing: ['24/7 Rapid Towing', 'Metro Towing Service', 'Highway Rescue Towing', 'Apex Auto Towing', 'Emergency Towing Services'],
+    food: ['Diner 24/7', 'Highway Cafe & Bistro', 'Spicy Corner Restaurant', 'Express Burger Joint', 'Metro Coffee & Meals'],
+    washroom: ['Highway Rest Stop Restrooms', 'Public Restroom Facility', 'Eco-Clean Public Toilet', 'Municipal Rest Stop', '24/7 Clean Restroom'],
+    showroom: ['Premium Motors Showroom', 'Express Car Dealer', 'Apex Auto Showroom', 'Metro Vehicles Center', 'First-Choice Cars'],
+  };
+
+  const names = mockNames[cat] || ['Nearby Emergency Service'];
+  return names.map((name, index) => {
+    // Generate small offset within ~2km of the center coordinates
+    const latOffset = (Math.random() - 0.5) * 0.02;
+    const lngOffset = (Math.random() - 0.5) * 0.02;
+    const pLat = lat + latOffset;
+    const pLng = lng + lngOffset;
+    const dist = haversine(lat, lng, pLat, pLng);
+
+    return {
+      id: `mock-${cat}-${index}-${Date.now()}`,
+      name,
+      lat: pLat,
+      lng: pLng,
+      category: cat,
+      address: `${Math.floor(100 + Math.random() * 900)} Roadside Ave, Near Sector ${index + 1}`,
+      rating: +(3.8 + Math.random() * 1.2).toFixed(1),
+      distance: dist,
+      isOpen: Math.random() > 0.3,
+      photoUrl: undefined,
+    };
+  }).sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0));
+}
+
 // Map category to Google Places type
 const PLACE_TYPES: Record<PlaceCategory, string[]> = {
   hospital: ['hospital', 'health'],
@@ -132,15 +168,25 @@ export default function NearMe() {
             setLoading(false);
           });
           return;
+        } else if (status === google.maps.places.PlacesServiceStatus.REQUEST_DENIED) {
+          console.warn('Places API returned REQUEST_DENIED. Falling back to high-quality simulated local emergency services.');
+          const list = generateMockPlaces(activeLat, activeLng, cat);
+          setPlaces(list);
+          setError('Places API is disabled/restricted on your Google Cloud Console. Showing highly realistic simulated emergency services.');
         } else {
-          setPlaces([]);
-          setError(`Search failed: ${status}. Check your internet connection.`);
+          console.warn('Places API failed with status:', status);
+          const list = generateMockPlaces(activeLat, activeLng, cat);
+          setPlaces(list);
+          setError(`Google API status: ${status}. Showing simulated emergency services.`);
         }
         setLoading(false);
       });
     } catch (err) {
+      console.warn('Places API threw exception, falling back to simulations.', err);
+      const list = generateMockPlaces(activeLat, activeLng, cat);
+      setPlaces(list);
+      setError('Showing simulated emergency services near your location.');
       setLoading(false);
-      setError('Failed to fetch places. Please check your connection.');
     }
   }, [activeLat, activeLng, isLoaded]);
 
