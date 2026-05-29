@@ -353,14 +353,10 @@ export default function NavigationPage() {
       {/* Map */}
       <div style={{ flex: 1, position: 'relative', minHeight: 0, cursor: pinMode ? 'crosshair' : 'default' }}>
         {loadError ? (
-          <iframe
-            title="Navigation Map"
-            width="100%"
-            height="100%"
-            style={{ border: 0 }}
-            src={`https://maps.google.com/maps?q=${center.lat},${center.lng}&t=m&z=14&output=embed`}
-            allowFullScreen
-          />
+          <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#FEE2E2', color: '#EF4444', padding: 20, textAlign: 'center' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: 8 }}>Failed to load Google Maps</div>
+            <div style={{ fontSize: '0.9rem' }}>{loadError instanceof Error ? loadError.message : String(loadError)}</div>
+          </div>
         ) : !isLoaded ? (
           <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
             <LoadingSpinner text="Loading map…" />

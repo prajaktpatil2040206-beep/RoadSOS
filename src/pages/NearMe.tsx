@@ -338,8 +338,11 @@ export default function NearMe() {
         {/* Map Section (70% on desktop) */}
         <div style={{ flex: '1 1 70%', position: 'relative', minHeight: 300 }}>
           {loadError ? (
-            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FEE2E2', color: '#EF4444' }}>
-              <AlertTriangle size={24} style={{ marginRight: 8 }} /> Failed to load Google Maps
+            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#FEE2E2', color: '#EF4444', padding: 20, textAlign: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', fontWeight: 'bold', marginBottom: 8 }}>
+                <AlertTriangle size={24} style={{ marginRight: 8 }} /> Failed to load Google Maps
+              </div>
+              <div style={{ fontSize: '0.9rem' }}>{loadError instanceof Error ? loadError.message : String(loadError)}</div>
             </div>
           ) : !isLoaded ? (
             <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
