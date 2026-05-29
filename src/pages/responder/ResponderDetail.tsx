@@ -269,13 +269,7 @@ export default function ResponderDetail() {
               mapContainerStyle={{ width: '100%', height: '100%' }}
               center={{ lat: anomaly.location.lat, lng: anomaly.location.lng }}
               zoom={14}
-              options={{
-                styles: LIGHT_MAP_OPTIONS,
-                disableDefaultUI: false,
-                zoomControl: true,
-                streetViewControl: true,
-                mapTypeControl: true
-              }}
+              options={LIGHT_MAP_OPTIONS}
             >
               <MarkerF
                 position={{ lat: anomaly.location.lat, lng: anomaly.location.lng }}
